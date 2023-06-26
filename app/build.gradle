@@ -1,0 +1,205 @@
+apply plugin: 'com.android.application'
+
+static def getVersionName() {
+    def name = "1.3"
+    return name
+}
+
+def getVersionCode() {// 获取版本号
+    def versionFile = file('version.properties')// 读取第一步新建的文件
+    if (versionFile.canRead()) {// 判断文件读取异常
+        Properties versionProps = new Properties()
+        versionProps.load(new FileInputStream(versionFile))
+        def versionCode = versionProps['VERSION_CODE'].toInteger()// 读取文件里面的版本号
+        def runTasks = gradle.startParameter.taskNames
+        if (':app:assembleRelease' in runTasks || ':app:packageRelease' in runTasks
+                || ':app:assembleProfessionalRelease' in runTasks
+                || ':app:assembleNormalRelease' in runTasks) {
+            // 版本号自增之后再写入文件（此处是关键，版本号自增+1）
+            versionProps['VERSION_CODE'] = (++versionCode).toString()
+            versionProps.store(versionFile.newWriter(), null)
+        }
+        return versionCode // 返回自增之后的版本号
+    }
+//    else {
+//        throw new GradleException("Could not find version.properties!")
+//    }
+}
+def appName = "TV盒子"
+def versionCodeNew = getVersionCode()
+def versionNameNew = getVersionName()
+android {
+    compileSdkVersion rootProject.ext.compileSdkVersion
+
+    defaultConfig {
+        applicationId 'com.github.tvbox.drpy'
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode versionCodeNew
+        versionName versionNameNew
+        multiDexEnabled true
+
+        //设置room的Schema的位置
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
+
+        ndk {
+            abiFilters 'arm64-v8a'
+            //abiFilters "armeabi-v7a"
+        }
+
+    }
+
+
+    packagingOptions {
+        exclude 'META-INF/androidx.localbroadcastmanager_localbroadcastmanager.version'
+        exclude 'META-INF/androidx.customview_customview.version'
+        exclude 'META-INF/androidx.legacy_legacy-support-core-ui.version'
+        exclude 'META-INF/androidx.legacy_legacy-support-core-utils.version'
+        exclude 'META-INF/androidx.slidingpanelayout_slidingpanelayout.version'
+        exclude 'META-INF/androidx.*.version'
+        exclude 'META-INF/proguard/androidx-annotations.pro'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/rxjava.properties'
+        exclude 'META-INF/beans.xml'
+    }
+
+    signingConfigs {
+
+        release {
+            keyAlias 'key0'
+            keyPassword "gs123654"
+            storeFile file('../tvbox.jks')
+            storePassword "gs123654"
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+    }
+
+    buildTypes {
+
+        debug {
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled false
+
+        }
+        release {
+            signingConfig signingConfigs.release
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            minifyEnabled true
+            shrinkResources true
+            zipAlignEnabled true
+
+        }
+    }
+
+    applicationVariants.all { variant ->
+        variant.outputs.all {
+            def type = variant.buildType.name
+            def fileName = appName + "_V" + versionNameNew + "_C" + versionCodeNew +
+                    "_" +  type + ".apk"
+            outputFileName = fileName
+        }
+    }
+
+    lintOptions {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+
+    buildFeatures {
+        dataBinding = true
+    }
+
+//    splits {
+//        abi {
+//            enable true
+//            reset()
+//
+//            // Specifies a list of ABIs that Gradle should create APKs for.
+//            include "x86", "x86_64", "armeabi-v7a", "arm64-v8a", "armeabi", "mips", "mips64"
+//            universalApk true //generate an additional APK that contains all the ABIs
+//        }
+//    }
+
+}
+
+dependencies {
+    api fileTree(dir: "libs", include: ["*.jar"])
+    // for WebDAV
+    implementation('com.github.thegrizzlylabs:sardine-android:0.5') {
+        exclude group: 'com.squareup.okhttp3'
+    }
+
+    implementation 'com.gitee.l0km:nanohttpd:2.3.4'
+    implementation 'com.gitee.l0km:nanohttpd-websocket:2.3.4'
+    //implementation 'io.reactivex:rxjava:1.3.8'
+    implementation 'com.google.zxing:core:3.4.1'
+    implementation 'androidx.appcompat:appcompat:1.3.1'
+    implementation 'androidx.constraintlayout:constraintlayout:2.0.4'
+    implementation 'androidx.lifecycle:lifecycle-extensions:2.2.0'
+    implementation 'androidx.recyclerview:recyclerview:1.1.0'
+    implementation 'com.google.android.material:material:1.4.0'
+    implementation files('libs\\thunder.jar', 'libs\\dec-0.1.2.jar')
+    implementation project(path: ':jieba_android')
+    //implementation files('libs\\chaquopy_java-12.0.1.jar')
+    annotationProcessor 'androidx.room:room-compiler:2.3.0'
+    implementation 'androidx.room:room-runtime:2.3.0'
+    implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'com.squareup.okhttp3:okhttp:3.12.11'
+    implementation 'com.squareup.okio:okio:2.6.0'
+    implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.45-androidx'
+    implementation 'com.kingja.loadsir:loadsir:1.3.8'
+    implementation 'com.google.code.gson:gson:2.8.7'
+
+    implementation 'com.squareup.picasso:picasso:2.71828'
+    implementation 'me.jessyan:autosize:1.2.1'
+    implementation('com.thoughtworks.xstream:xstream:1.4.15') {
+        exclude group: 'xmlpull', module: 'xmlpull'
+    }
+    implementation 'org.greenrobot:eventbus:3.2.0'
+    implementation 'com.orhanobut:hawk:2.0.1'
+
+    implementation "androidx.annotation:annotation:1.3.0"
+    implementation "com.google.android.exoplayer:exoplayer-core:" + rootProject.ext.exoVersion
+    implementation "com.google.android.exoplayer:exoplayer-dash:" + rootProject.ext.exoVersion
+    implementation "com.google.android.exoplayer:exoplayer-hls:" + rootProject.ext.exoVersion
+    implementation "com.google.android.exoplayer:exoplayer-rtsp:" + rootProject.ext.exoVersion
+    implementation "com.google.android.exoplayer:extension-rtmp:" + rootProject.ext.exoVersion
+    //implementation 'com.google.android.exoplayer:extension-okhttp:' + rootProject.ext.exoVersion
+
+    implementation 'xyz.doikki.android.dkplayer:dkplayer-ui:3.3.5'
+
+    //弹窗组件
+    //implementation project(":XPopup")
+    implementation project(":pyramid")
+
+    implementation('org.xwalk:xwalk_shared_library:23.53.589.4') {
+        exclude group: 'com.android.support'
+    }
+    implementation 'com.lzy.net:okgo:3.0.4'
+    implementation 'com.owen:tv-recyclerview:3.0.0'
+
+    implementation 'com.github.getActivity:XXPermissions:13.6'
+    implementation 'org.jsoup:jsoup:1.15.3'
+    implementation "cn.wanghaomiao:JsoupXpath:2.5.0"
+    implementation 'com.github.hedzr:android-file-chooser:v1.2.0-final'
+    implementation 'commons-io:commons-io:2.11.0'
+    implementation 'com.googlecode.juniversalchardet:juniversalchardet:1.0.3'
+    implementation 'com.github.seven332:jcifs:1.3.19'
+    configurations {
+        all {
+            exclude group: 'xpp3', module: 'xpp3'
+        }
+    }
+
+    //implementation 'com.annimon:stream:1.2.2'
+    //奔溃信息提示
+    //implementation("com.simple:spiderman:1.1.6") {
+    //    exclude group: "androidx.appcompat"
+    //}
+}
