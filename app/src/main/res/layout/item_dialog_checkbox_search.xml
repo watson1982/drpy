@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<CheckBox xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/oneSearchSource"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:background="@drawable/button_dialog_main"
+    android:clickable="true"
+    android:focusable="true"
+    android:padding="@dimen/vs_10"
+    android:singleLine="true"
+    android:text="1111"
+    android:textColor="@color/color_FFFFFF"
+    android:textSize="@dimen/ts_24" />
