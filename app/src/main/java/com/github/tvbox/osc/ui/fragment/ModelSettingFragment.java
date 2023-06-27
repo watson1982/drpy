@@ -28,6 +28,7 @@ import com.github.tvbox.osc.ui.dialog.AboutDialog;
 import com.github.tvbox.osc.ui.dialog.ApiDialog;
 import com.github.tvbox.osc.ui.dialog.ApiHistoryDialog;
 import com.github.tvbox.osc.ui.dialog.BackupDialog;
+import com.github.tvbox.osc.ui.dialog.DcDialog;
 import com.github.tvbox.osc.ui.dialog.SelectDialog;
 import com.github.tvbox.osc.ui.dialog.XWalkInitDialog;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
@@ -772,179 +773,33 @@ public class ModelSettingFragment extends BaseLazyFragment {
             }
         };
 
-        findViewById(R.id.llHomeApi).setOnClickListener( v -> {
-            ArrayList<String> history = Hawk.get(HawkConfig.API_NAME_HISTORY, new ArrayList<>());
-            HashMap<String, String> map = Hawk.get(HawkConfig.API_MAP, new HashMap<>());
-
-            if (history.isEmpty())
-                return;
-            String current = Hawk.get(HawkConfig.API_NAME, "");
-            int idx = 0;
-            if (history.contains(current))
-                idx = history.indexOf(current);
-            ApiHistoryDialog dialog = new ApiHistoryDialog(getContext());
-            dialog.setTip("历史配置列表");
-            dialog.setAdapter(new ApiHistoryDialogAdapter.SelectDialogInterface() {
-                @Override
-                public void click(String value) {
-                    Hawk.put(HawkConfig.API_NAME, value);
-                    if (map.containsKey(value))
-                        Hawk.put(HawkConfig.API_URL, map.get(value));
-                    else
-                        Hawk.put(HawkConfig.API_URL, value);
-
-                    tvHomeApi.setText(value);
-
-                    dialog.dismiss();
-                }
-
-
-                @Override
-                public void del(String value, ArrayList<String> data) {
-                    Hawk.put(HawkConfig.API_NAME_HISTORY, data);
-                }
-            }, history, idx);
-            dialog.show();
+        findViewById(R.id.llStoreApi).setOnClickListener( v -> {
+            FastClickCheckUtil.check(v);
+            DcDialog storeApiDialog = new DcDialog(mActivity);
+            EventBus.getDefault().register(storeApiDialog);
+            storeApiDialog.setOnListener(name -> {
+                Hawk.put(HawkConfig.STORE_API_NAME, name);
+            });
+            storeApiDialog.setOnDismissListener(dialog -> {
+                EventBus.getDefault().unregister(dialog);
+            });
+            storeApiDialog.show();
         });
 
-        findViewById(R.id.llApi).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                FastClickCheckUtil.check(v);
-                ApiDialog dialog = new ApiDialog(mActivity);
-                EventBus.getDefault().register(dialog);
-                dialog.setOnListener(url -> {
-                    tvHomeApi.setText(url);
-//                        tvApi.setText(api);
-                });
-                dialog.setOnDismissListener(dialog1 -> {
-                    //((BaseActivity) mActivity).hideSysBar();
-                    EventBus.getDefault().unregister(dialog1);
-                });
-                dialog.show();
-            }
+        findViewById(R.id.tvStoreApi).setOnClickListener( v -> {
+            FastClickCheckUtil.check(v);
+            DcDialog storeApiDialog = new DcDialog(mActivity);
+            EventBus.getDefault().register(storeApiDialog);
+            storeApiDialog.setOnListener(name -> {
+                Hawk.put(HawkConfig.STORE_API_NAME, name);
+            });
+            storeApiDialog.setOnDismissListener(dialog -> {
+                EventBus.getDefault().unregister(dialog);
+            });
+            storeApiDialog.show();
         });
 
-        findViewById(R.id.llApiHistory).setOnClickListener( v -> {
-            // ArrayList<String> apiHistory = Hawk.get(HawkConfig.API_HISTORY, new ArrayList<>());
-            // ArrayList<String> nameHistory = Hawk.get(HawkConfig.API_NAME_HISTORY, new ArrayList<>());
-            ArrayList<String> history = Hawk.get(HawkConfig.API_NAME_HISTORY, new ArrayList<>());
-            HashMap<String, String> map = Hawk.get(HawkConfig.API_MAP, new HashMap<>());
 
-            // apiHistory.addAll(nameHistory);
-            //
-            //
-            // Set<String> set = new HashSet<>();
-            // List<String> history = new ArrayList<>();
-            //
-            // for (String cd : apiHistory) {
-            //     if (set.add(cd)) {
-            //         history.add(cd);
-            //     }
-            // }
-
-            if (history.isEmpty())
-                return;
-            String current = Hawk.get(HawkConfig.API_NAME, "");
-            int idx = 0;
-            if (history.contains(current))
-                idx = history.indexOf(current);
-            ApiHistoryDialog dialog = new ApiHistoryDialog(getContext());
-            dialog.setTip("历史配置列表");
-            dialog.setAdapter(new ApiHistoryDialogAdapter.SelectDialogInterface() {
-                @Override
-                public void click(String value) {
-                    Hawk.put(HawkConfig.API_NAME, value);
-                    if (map.containsKey(value))
-                        Hawk.put(HawkConfig.API_URL, map.get(value));
-                    else
-                        Hawk.put(HawkConfig.API_URL, value);
-
-                    tvHomeApi.setText(value);
-
-                    dialog.dismiss();
-                }
-
-
-                @Override
-                public void del(String value, ArrayList<String> data) {
-                    Hawk.put(HawkConfig.API_NAME_HISTORY, data);
-                }
-            }, history, idx);
-            dialog.show();
-        });
-
-        findViewById(R.id.llStoreApiHistory).setOnClickListener( v -> {
-            ArrayList<String> history = Hawk.get(HawkConfig.STORE_API_NAME_HISTORY, new ArrayList<>());
-            if (history.isEmpty())
-                return;
-
-            String storeApiName = Hawk.get(HawkConfig.STORE_API_NAME, "");
-
-            int idx = 0;
-            if (history.contains(storeApiName))
-                idx = history.indexOf(storeApiName);
-
-            ApiHistoryDialog dialog = new ApiHistoryDialog(getContext());
-            dialog.setTip("多源历史配置列表");
-            dialog.setAdapter(new ApiHistoryDialogAdapter.SelectDialogInterface() {
-                @Override
-                public void click(String value) {
-                    Hawk.put(HawkConfig.STORE_API_NAME, value);
-                    try {
-                        DcConfig.get().Subscribe(getContext());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    dialog.dismiss();
-                }
-
-                @Override
-                public void del(String value, ArrayList<String> data) {
-                    HashMap<String, String> map = Hawk.get(HawkConfig.STORE_API_MAP, new HashMap<>());
-                    map.remove(value);
-                    Hawk.put(HawkConfig.STORE_API_MAP, map);
-                    Hawk.put(HawkConfig.STORE_API_NAME_HISTORY, data);
-                }
-            }, history, idx);
-            dialog.show();
-        });
-
-        findViewById(R.id.llStoreApiHistory).setOnClickListener( v -> {
-            ArrayList<String> history = Hawk.get(HawkConfig.STORE_API_NAME_HISTORY, new ArrayList<>());
-            if (history.isEmpty())
-                return;
-
-            String storeApiName = Hawk.get(HawkConfig.STORE_API_NAME, "");
-
-            int idx = 0;
-            if (history.contains(storeApiName))
-                idx = history.indexOf(storeApiName);
-
-            ApiHistoryDialog dialog = new ApiHistoryDialog(getContext());
-            dialog.setTip("多源历史配置列表");
-            dialog.setAdapter(new ApiHistoryDialogAdapter.SelectDialogInterface() {
-                @Override
-                public void click(String value) {
-                    Hawk.put(HawkConfig.STORE_API_NAME, value);
-                    try {
-                        DcConfig.get().Subscribe(getContext());
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                    dialog.dismiss();
-                }
-
-                @Override
-                public void del(String value, ArrayList<String> data) {
-                    HashMap<String, String> map = Hawk.get(HawkConfig.STORE_API_MAP, new HashMap<>());
-                    map.remove(value);
-                    Hawk.put(HawkConfig.STORE_API_MAP, map);
-                    Hawk.put(HawkConfig.STORE_API_NAME_HISTORY, data);
-                }
-            }, history, idx);
-            dialog.show();
-        });
     }
 
     @Override

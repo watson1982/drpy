@@ -1,6 +1,7 @@
 package com.github.tvbox.osc.ui.dialog;
 
 import android.content.Context;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -11,6 +12,8 @@ import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.DcConfig;
 import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.server.ControlManager;
+import com.github.tvbox.osc.ui.activity.HomeActivity;
+import com.github.tvbox.osc.ui.adapter.ApiHistoryDialogAdapter;
 import com.github.tvbox.osc.ui.tv.QRCodeGen;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.orhanobut.hawk.Hawk;
@@ -20,6 +23,7 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 import me.jessyan.autosize.utils.AutoSizeUtils;
@@ -46,7 +50,7 @@ public class DcDialog extends BaseDialog {
     public DcDialog(@NonNull @NotNull Context context) {
         super(context);
         setContentView(R.layout.dialog_store_api);
-        setCanceledOnTouchOutside(false);
+        //setCanceledOnTouchOutside(false);
         ivQRCode = findViewById(R.id.ivQRCode);
         tvAddress = findViewById(R.id.tvAddress);
         // inputStoreApiName = findViewById(R.id.inputStoreApiName);
@@ -80,6 +84,39 @@ public class DcDialog extends BaseDialog {
             dismiss();
         });
 
+        findViewById(R.id.StoreApiHistory).setOnClickListener( v -> {
+            ArrayList<String> history = Hawk.get(HawkConfig.STORE_API_NAME_HISTORY, new ArrayList<>());
+            if (history.isEmpty())
+                return;
+
+            int idx = 0;
+            if (history.contains(storeApiName))
+                idx = history.indexOf(storeApiName);
+
+            ApiHistoryDialog dialog = new ApiHistoryDialog(getContext());
+            dialog.setTip("多源历史配置列表");
+            dialog.setAdapter(new ApiHistoryDialogAdapter.SelectDialogInterface() {
+                @Override
+                public void click(String value) {
+                    Hawk.put(HawkConfig.STORE_API_NAME, value);
+                    try {
+                        DcConfig.get().Subscribe(getContext());
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    dialog.dismiss();
+                }
+
+                @Override
+                public void del(String value, ArrayList<String> data) {
+                    HashMap<String, String> map = Hawk.get(HawkConfig.STORE_API_MAP, new HashMap<>());
+                    map.remove(value);
+                    Hawk.put(HawkConfig.STORE_API_MAP, map);
+                    Hawk.put(HawkConfig.STORE_API_NAME_HISTORY, data);
+                }
+            }, history, idx);
+            dialog.show();
+        });
         refreshQRCode();
     }
 
