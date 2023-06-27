@@ -1023,6 +1023,7 @@ public class VodController extends BaseController {
                 // takagen99 : Add Video Resolution
                 if (mControlWrapper.getVideoSize().length >= 2) {
                     mPlayerResolution.setText(mControlWrapper.getVideoSize()[0] + " x " + mControlWrapper.getVideoSize()[1]);
+
                     initLandscapePortraitBtnInfo();
                 }
             case VideoView.STATE_BUFFERED:

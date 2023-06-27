@@ -12,7 +12,7 @@ import com.google.android.exoplayer2.extractor.mp4.FragmentedMp4Extractor;
 import com.google.android.exoplayer2.extractor.ts.Ac3Extractor;
 import com.google.android.exoplayer2.extractor.ts.Ac4Extractor;
 import com.google.android.exoplayer2.extractor.ts.AdtsExtractor;
-import com.google.android.exoplayer2.extractor.ts.MyTsExtractor;
+import com.google.android.exoplayer2.extractor.ts.TsExtractor;
 import com.google.android.exoplayer2.source.hls.HlsMediaChunkExtractor;
 import com.google.android.exoplayer2.source.hls.WebvttExtractor;
 import com.google.android.exoplayer2.util.Assertions;
@@ -66,7 +66,7 @@ public class MyBundledHlsMediaChunkExtractor implements HlsMediaChunkExtractor {
 
     @Override
     public boolean isReusable() {
-        return extractor instanceof MyTsExtractor || extractor instanceof FragmentedMp4Extractor;
+        return extractor instanceof TsExtractor || extractor instanceof FragmentedMp4Extractor;
     }
 
     @Override

@@ -6,6 +6,7 @@ import android.text.TextUtils;
 import android.util.Base64;
 
 import com.github.catvod.crawler.JarLoader;
+import com.github.catvod.crawler.JsLoader;
 import com.github.catvod.crawler.Spider;
 import com.github.catvod.crawler.SpiderNull;
 import com.github.tvbox.osc.R;
@@ -23,6 +24,7 @@ import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.MD5;
 import com.github.tvbox.osc.util.VideoParseRuler;
+import com.github.tvbox.osc.util.js.SpiderJS;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -545,6 +547,9 @@ public class ApiConfig {
     }
 
     public Spider getCSP(SourceBean sourceBean) {
+        if (sourceBean.getApi().toLowerCase().endsWith(".js") || sourceBean.getApi().toLowerCase().contains(".js?")) {
+            return new JsLoader().getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
+        }
         // Getting Pyramid api
         if (sourceBean.getApi().startsWith("py_")) {
             try {

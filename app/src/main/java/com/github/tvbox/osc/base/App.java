@@ -23,6 +23,8 @@ import com.quickjs.android.QuickJSLoader;
 //import com.simple.spiderman.SpiderMan;
 import com.undcover.freedom.pyramid.PythonLoader;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.concurrent.Executors;
 
 import com.jieba_android.JiebaSegmenter;
@@ -85,7 +87,21 @@ public class App extends MultiDexApplication {
 //        putDefault(HawkConfig.HOME_NUM, 2);       // History Number
 //        putDefault(HawkConfig.DOH_URL, 2);        // DNS
 //        putDefault(HawkConfig.SEARCH_VIEW, 1);    // Text or Picture
+        String defaultApiName = "默认-自备份线路";
+        String defaultApi = "";
 
+        HashMap<String, String> defaultApiMap = Hawk.get(HawkConfig.API_MAP, new HashMap<>());
+        defaultApiMap.put(defaultApiName, defaultApi);
+
+        ArrayList<String> defaultApiHistory = Hawk.get(HawkConfig.API_NAME_HISTORY, new ArrayList<>());
+        defaultApiHistory.add(defaultApiName);
+
+        Hawk.put(HawkConfig.DEBUG_OPEN, false);
+
+        putDefault(HawkConfig.API_URL, defaultApi);
+        putDefault(HawkConfig.API_NAME, defaultApiName);
+        putDefault(HawkConfig.API_NAME_HISTORY, defaultApiHistory);
+        putDefault(HawkConfig.API_MAP, defaultApiMap);
     }
 
     private void initLocale() {
