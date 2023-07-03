@@ -6,9 +6,11 @@ import com.github.catvod.crawler.Spider;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.MD5;
+import com.google.gson.Gson;
 import com.quickjs.android.JSArray;
 import com.quickjs.android.JSModule;
 import com.quickjs.android.JSObject;
+import com.quickjs.android.JSUtils;
 
 import java.util.HashMap;
 import java.util.List;
@@ -60,8 +62,9 @@ public class SpiderJS extends Spider {
                     }
                     ctx.evaluateModule(jsContent, js);
                     jsObject = (JSObject) ctx.getProperty(globalThis, moduleKey);
-                    jsObject.getJSFunction("init").call(ext);
-                    //jsObject.getJSFunction("init").call(FileUtils.loadJs(ext));
+                    //jsObject.getJSFunction("init").call(ext);
+                    ext = FileUtils.loadModule(ext);
+                    jsObject.getJSFunction("init").call(JSUtils.isJsonAr(ext)?ctx.parse(ext):ext);
                     return null;
                 });
             } catch (Throwable throwable) {

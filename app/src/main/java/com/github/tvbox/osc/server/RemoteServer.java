@@ -138,7 +138,7 @@ public class RemoteServer extends NanoHTTPD {
                                 wsSocket.ping(" ".getBytes());
                             }
                         }catch (Throwable e) {
-                            //logger.error(e.getMessage(),e);
+                            com.github.tvbox.osc.util.LOG.e(e);
                         }
                     }
                 }
@@ -644,7 +644,7 @@ public class RemoteServer extends NanoHTTPD {
                             wsSocket.send(logEvent.getText());
                         }
                     } catch (Throwable e) {
-                        //logger.error(e.getMessage(),e);
+                        com.github.tvbox.osc.util.LOG.e(e);
                     }
                 }
             }

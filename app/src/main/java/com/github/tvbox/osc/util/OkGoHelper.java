@@ -14,11 +14,13 @@ import com.orhanobut.hawk.Hawk;
 import com.squareup.picasso.Picasso;
 
 import java.io.File;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.X509TrustManager;
 
 import okhttp3.Cache;
 import okhttp3.HttpUrl;
@@ -148,7 +150,7 @@ public class OkGoHelper {
                 .connectTimeout(DEFAULT_MILLISECONDS, TimeUnit.MILLISECONDS)
                 .dns(dnsOverHttps);
         try {
-            builder = setOkHttpSsl(builder);
+            setOkHttpSsl(builder);
         } catch (Throwable th) {
             th.printStackTrace();
         }
@@ -158,15 +160,14 @@ public class OkGoHelper {
         OkHttpClient okHttpClient = builder.build();
         OkGo.getInstance().setOkHttpClient(okHttpClient);
 
-        initExoOkHttpClient();
-        initPicasso(okHttpClient);
         defaultClient = okHttpClient;
-        //defaultClient.dispatcher().setMaxRequestsPerHost(16);
 
         builder.followRedirects(false);
         builder.followSslRedirects(false);
         noRedirectClient = builder.build();
-        //noRedirectClient.dispatcher().setMaxRequestsPerHost(16);
+
+        initExoOkHttpClient();
+        initPicasso(okHttpClient);
     }
 
     static void initPicasso(OkHttpClient client) {
@@ -180,12 +181,27 @@ public class OkGoHelper {
         Picasso.setSingletonInstance(picasso);
     }
 
-    private static synchronized OkHttpClient.Builder setOkHttpSsl(OkHttpClient.Builder builder) {
+    private static synchronized void setOkHttpSsl(OkHttpClient.Builder builder) {
         try {
-            final SSLSocketFactory sslSocketFactory = new SSLSocketFactoryCompat(SSLSocketFactoryCompat.trustAllCert);
-            return builder
-                    .sslSocketFactory(sslSocketFactory, SSLSocketFactoryCompat.trustAllCert)
-                    .hostnameVerifier(HttpsUtils.UnSafeHostnameVerifier);
+            // 自定义一个信任所有证书的TrustManager，添加SSLSocketFactory的时候要用到
+            final X509TrustManager trustAllCert =
+                    new X509TrustManager() {
+                        @Override
+                        public void checkClientTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+
+                        @Override
+                        public void checkServerTrusted(java.security.cert.X509Certificate[] chain, String authType) {
+                        }
+
+                        @Override
+                        public java.security.cert.X509Certificate[] getAcceptedIssuers() {
+                            return new java.security.cert.X509Certificate[]{};
+                        }
+                    };
+            final SSLSocketFactory sslSocketFactory = new SSLSocketFactoryCompat(trustAllCert);
+            builder.sslSocketFactory(sslSocketFactory, trustAllCert);
+            builder.hostnameVerifier(HttpsUtils.UnSafeHostnameVerifier);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

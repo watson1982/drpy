@@ -139,6 +139,7 @@ public class JSThread {
             }
         }
     }
+
     private void initProperty() {
         Method[] methods = this.getClass().getMethods();
         for (Method method : methods) {
@@ -187,7 +188,7 @@ public class JSThread {
     @JSMethod(alias = "pdfa")
     public Object parseDomForArray(String html, String rule) {
         try {
-            return getJsContext().parseJSON(new Gson().toJson(HtmlParser.parseDomForArray(html, rule)));
+            return getJsContext().parse(new Gson().toJson(HtmlParser.parseDomForArray(html, rule)));
         } catch (Exception th) {
             LOG.e(th);
             return getJsContext().createNewJSArray();
@@ -198,7 +199,7 @@ public class JSThread {
     @JSMethod(alias = "pdfl")
     public Object parseDomForList(String html, String p1, String list_text, String list_url, String urlKey) {
         try {
-            return getJsContext().parseJSON(new Gson().toJson(HtmlParser.parseDomForList(html, p1, list_text, list_url, urlKey)));
+            return getJsContext().parse(new Gson().toJson(HtmlParser.parseDomForList(html, p1, list_text, list_url, urlKey)));
         } catch (Exception th) {
             LOG.e(th);
             return getJsContext().createNewJSArray();
@@ -306,6 +307,7 @@ public class JSThread {
             return "";
         }
     }
+
     void initConsole() {
         getGlobalObj().setProperty( "local", local.class);
         jsContext.evaluate("var console = {};");

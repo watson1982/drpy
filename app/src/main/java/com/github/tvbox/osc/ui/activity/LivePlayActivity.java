@@ -575,7 +575,7 @@ public class LivePlayActivity extends BaseActivity {
         }
         epgListAdapter.CanBack(currentLiveChannelItem.getinclude_back());
 //        epgListAdapter.setNewData(arrayList);
-        UrlHttpUtil.get("http://epg.51zmt.top:8000/api/diyp/?ch=" + URLEncoder.encode(epgTagName) + "&date=" + timeFormat.format(date), new CallBackUtil.CallBackString() {
+        UrlHttpUtil.get("http://diyp.112114.xyz/?ch=" + URLEncoder.encode(epgTagName) + "&date=" + timeFormat.format(date), new CallBackUtil.CallBackString() {
             public void onFailure(int i, String str) {
                 showEpg(date, new ArrayList());
                 showBottomEpg();

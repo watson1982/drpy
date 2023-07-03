@@ -23,7 +23,7 @@ import tv.danmaku.ijk.media.player.IjkMediaPlayer;
  * @description:
  */
 public class ControlManager {
-    private static ControlManager instance;
+    private static volatile ControlManager instance;
     private RemoteServer mServer = null;
     public static Context mContext;
 
@@ -56,6 +56,7 @@ public class ControlManager {
         }
         do {
             mServer = new RemoteServer(RemoteServer.serverPort, mContext);
+            mServer.setNoCORS(true);
             mServer.setDataReceiver(new DataReceiver() {
                 @Override
                 public void onTextReceived(String text) {

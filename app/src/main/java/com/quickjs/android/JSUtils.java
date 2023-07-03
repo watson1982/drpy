@@ -1,6 +1,8 @@
 package com.quickjs.android;
 
 
+import android.text.TextUtils;
+
 import java.lang.reflect.Array;
 import java.util.Collection;
 import java.util.List;
@@ -164,4 +166,14 @@ public class JSUtils {
         return ((st > 0) || (len < str.length())) ? str.substring(st, len) : str;
     }
 
+    public static boolean isJsonAr(String str) {
+        boolean result = false;
+        if (!TextUtils.isEmpty(str)) {
+            str = str.trim();
+            if (str.startsWith("[") && str.endsWith("]")) {
+                result = true;
+            }
+        }
+        return result;
+    }
 }

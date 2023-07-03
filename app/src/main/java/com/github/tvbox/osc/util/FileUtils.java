@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigDecimal;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class FileUtils {
 
@@ -75,7 +77,7 @@ public class FileUtils {
                     if (!TextUtils.isEmpty(netStr)) {
                         setCache(604800, MD5.encode(name), netStr);
                     }
-                    return netStr;
+                    return ControlManager.get().getAddress(true) + "/proxy?do=ext&txt=" + Base64.encodeToString(netStr.getBytes(), Base64.URL_SAFE);
                 }
                 return ControlManager.get().getAddress(true) + "/proxy?do=ext&txt=" + Base64.encodeToString(cache.getBytes(), Base64.URL_SAFE);
                 //return cache;
@@ -87,20 +89,21 @@ public class FileUtils {
         return name;
     }
 
+    private static final Pattern URLJOIN = Pattern.compile("^http.*\\.(js|txt|json|m3u)$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
+
     public static String loadModule(String name) {
         try {
             if(name.contains("cheerio.min.js")){
                 name = "cheerio.min.js";
             } else if(name.contains("crypto-js.js")){
                 name = "crypto-js.js";
-            } else if(name.contains("dayjs.min.js")){
-                name = "dayjs.min.js";
-            } else if(name.contains("uri.min.js")){
-                name = "uri.min.js";
-            } else if(name.contains("underscore-esm-min.js")){
-                name = "underscore-esm-min.js";
+            } else if (name.contains("gbk.js")) {
+                name = "gbk.js";
+            } else if (name.contains("模板.js")) {
+                name = "模板.js";
             }
-            if (name.startsWith("http://") || name.startsWith("https://")) {
+            Matcher m = URLJOIN.matcher(name);
+            if (m.find()) {
                 String cache = getCache(MD5.encode(name));
                 if (JSUtils.isEmpty(cache)) {
                     String netStr = OkHttpUtil.get(name);

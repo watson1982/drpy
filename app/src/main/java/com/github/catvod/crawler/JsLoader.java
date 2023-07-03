@@ -1,6 +1,7 @@
 package com.github.catvod.crawler;
 
 import com.github.tvbox.osc.base.App;
+import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.js.SpiderJS;
 
 import java.util.concurrent.ConcurrentHashMap;
@@ -12,6 +13,7 @@ public class JsLoader {
         if (spiders.containsKey(key))
             return spiders.get(key);
         try {
+            //ext = FileUtils.loadModule(ext);
             SpiderJS sp = new SpiderJS(key, cls, ext);
             sp.init(App.getInstance(), ext);
             spiders.put(key, sp);
