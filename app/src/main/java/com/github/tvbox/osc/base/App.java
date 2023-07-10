@@ -19,15 +19,13 @@ import com.github.tvbox.osc.util.js.jianpian;
 import com.kingja.loadsir.core.LoadSir;
 import com.orhanobut.hawk.Hawk;
 import com.p2p.P2PClass;
-import com.quickjs.android.QuickJSLoader;
-//import com.simple.spiderman.SpiderMan;
-import com.undcover.freedom.pyramid.PythonLoader;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.Executors;
 
 import com.jieba_android.JiebaSegmenter;
+import com.quickjs.android.QuickJSLoader;
+
 import me.jessyan.autosize.AutoSizeConfig;
 import me.jessyan.autosize.unit.Subunits;
 
@@ -68,10 +66,6 @@ public class App extends MultiDexApplication {
                 .setSupportSubunits(Subunits.MM);
         PlayerHelper.init();
         QuickJSLoader.init();
-        QuickJSLoader.startRedirectingStdoutStderr("QuickJS");
-
-        // Add Pyramid support
-        PythonLoader.getInstance().setApplication(this);
 
         JiebaSegmenter.init(instance.getApplicationContext());
     }

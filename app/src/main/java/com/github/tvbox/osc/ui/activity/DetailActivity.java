@@ -61,6 +61,7 @@ import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7GridLayoutManager;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
+import com.quickjs.android.JSUtils;
 import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
@@ -588,7 +589,7 @@ public class DetailActivity extends BaseActivity {
     }
 
     private void setTextShow(TextView view, String tag, String info) {
-        if (info == null || info.trim().isEmpty()) {
+        if (info == null || JSUtils.isEmpty(info.trim())) {
             view.setVisibility(View.GONE);
             return;
         }

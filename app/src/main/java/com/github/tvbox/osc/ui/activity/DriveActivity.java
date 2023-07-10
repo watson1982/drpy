@@ -17,6 +17,7 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DiffUtil;
 
 import com.github.tvbox.osc.R;
+import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.base.BaseActivity;
 import com.github.tvbox.osc.bean.DriveFolderFile;
@@ -408,6 +409,10 @@ public class DriveActivity extends BaseActivity {
                 if (delMode)
                     drive.isDelMode = true;
                 drives.add(drive);
+            }
+            List<DriveFolderFile> arrayList3 = ApiConfig.get().drives;
+            if (arrayList3 != null) {
+                drives.addAll(arrayList3);
             }
         }
         adapter.setNewData(drives);

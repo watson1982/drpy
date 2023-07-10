@@ -16,6 +16,7 @@ import com.github.tvbox.osc.ui.adapter.HistoryAdapter;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7GridLayoutManager;
+import com.quickjs.android.JSUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -155,7 +156,7 @@ public class HistoryActivity extends BaseActivity {
         List<VodInfo> allVodRecord = RoomDataManger.getAllVodRecord(100);
         List<VodInfo> vodInfoList = new ArrayList<>();
         for (VodInfo vodInfo : allVodRecord) {
-            if (vodInfo.playNote != null && !vodInfo.playNote.isEmpty()) {
+            if (vodInfo.playNote != null && !JSUtils.isEmpty(vodInfo.playNote)) {
                 vodInfo.note = "上次看到" + vodInfo.playNote;
             }
             vodInfoList.add(vodInfo);

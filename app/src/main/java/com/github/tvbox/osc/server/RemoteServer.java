@@ -3,6 +3,7 @@ package com.github.tvbox.osc.server;
 import android.content.Context;
 import android.os.Environment;
 import android.text.TextUtils;
+import android.util.Log;
 
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
@@ -16,6 +17,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.quickjs.android.JSUtils;
 
 
 import org.greenrobot.eventbus.EventBus;
@@ -308,7 +310,7 @@ public class RemoteServer extends NanoHTTPD {
             if(isPreflightRequest(session)){
                 return responseCORS(session);
             }
-            if (!session.getUri().isEmpty()) {
+            if (!JSUtils.isEmpty(session.getUri())) {
                 String fileName = session.getUri().trim();
                 if (fileName.indexOf('?') >= 0) {
                     fileName = fileName.substring(0, fileName.indexOf('?'));
@@ -324,6 +326,7 @@ public class RemoteServer extends NanoHTTPD {
                         if (params.containsKey("do")) {
                             Object[] rs = ApiConfig.get().proxyLocal(params);
                             try {
+                                //EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", "proxy") + rs[0]));
                                 int code = (int) rs[0];
                                 String mime = (String) rs[1];
                                 InputStream stream = rs[2] != null ? (InputStream) rs[2] : null;
@@ -333,6 +336,7 @@ public class RemoteServer extends NanoHTTPD {
                                         stream
                                 );
                             } catch (Throwable th) {
+                                EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", "proxy") + Log.getStackTraceString(th)));
                                 return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "500");
                             }
                         }
@@ -503,7 +507,7 @@ public class RemoteServer extends NanoHTTPD {
         JsonObject info = new JsonObject();
         info.addProperty("remote", getServerAddress().replace("http://", "clan://"));
         info.addProperty("del", 0);
-        if (path.isEmpty()) {
+        if (JSUtils.isEmpty(path)) {
             info.addProperty("parent", ".");
         } else {
             info.addProperty("parent", file.getParentFile().getAbsolutePath().replace(root + "/", "").replace(root, ""));

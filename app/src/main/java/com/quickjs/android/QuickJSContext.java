@@ -35,6 +35,16 @@ public class QuickJSContext {
         dumpMemoryUsage(runtime, target.getAbsolutePath());
     }
 
+    // will use stdout to print.
+    public void dumpMemoryUsage() {
+        dumpMemoryUsage(runtime, null);
+    }
+
+    // will use stdout to print.
+    public void dumpObjects() {
+        dumpObjects(runtime);
+    }
+
     private final long runtime;
     private final long context;
     private final NativeCleaner<JSObject> nativeCleaner = new NativeCleaner<JSObject>() {
@@ -209,16 +219,6 @@ public class QuickJSContext {
         set(context, jsArray.getPointer(), value, index);
     }
 
-    public String[] getKeys(JSObject jsObj) {
-        checkSameThread();
-        return getKeys(context, jsObj.getPointer());
-    }
-
-    public boolean contains(JSObject jsObj, String key) {
-        checkSameThread();
-        return contains(context, jsObj.getPointer(), key);
-    }
-	
     Object call(JSObject func, long objPointer, Object... args) {
         checkSameThread();
         checkDestroyed();
@@ -298,7 +298,7 @@ public class QuickJSContext {
 
         return evaluateModule(context, script, moduleName);
     }
-    
+
     public Object evaluateModule(String script) {
         return evaluateModule(script, UNKNOWN_FILE);
     }
@@ -316,6 +316,7 @@ public class QuickJSContext {
     private native void runGC(long runtime);
     private native void setMemoryLimit(long runtime, int size);
     private native void dumpMemoryUsage(long runtime, String fileName);
+    private native void dumpObjects(long runtime);
 
     // context
     private native long createContext(long runtime);
@@ -336,8 +337,20 @@ public class QuickJSContext {
     private native byte[] compile(long context, String sourceCode, String fileName); // Bytecode compile
     private native Object execute(long context, byte[] bytecode); // Bytecode execute
 
-    private native boolean contains(long context, long objValue, String key);
-    private native String[] getKeys(long context, long objValue);
     // destroy context and runtime
     private native void destroyContext(long context);
+
+    private native boolean contains(long context, long objValue, String key);
+    private native String[] getKeys(long context, long objValue);
+
+
+    public String[] getKeys(JSObject jsObj) {
+        checkSameThread();
+        return getKeys(context, jsObj.getPointer());
+    }
+
+    public boolean contains(JSObject jsObj, String key) {
+        checkSameThread();
+        return contains(context, jsObj.getPointer(), key);
+    }
 }

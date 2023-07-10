@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.HandlerThread;
 
 import com.github.tvbox.osc.util.FileUtils;
+import com.google.android.exoplayer2.util.UriUtil;
 import com.quickjs.android.JSModule;
 import com.quickjs.android.JSObject;
 import com.quickjs.android.QuickJSContext;
@@ -22,7 +23,7 @@ public class JSEngine {
 
     private ConcurrentHashMap<String, JSThread> threads = new ConcurrentHashMap<>();
 
-    public JSThread getJSThread() {
+    public JSThread getJSThread(Class<?> cls) {
         byte count = Byte.MAX_VALUE;
         JSThread thread = null;
         for (String name : threads.keySet()) {
@@ -54,8 +55,11 @@ public class JSEngine {
                     e.printStackTrace();
                 }
             }
-            QuickJSContext jsContext = (QuickJSContext) objects[0];
             JSModule.setModuleLoader(new JSModule.ModuleLoader() {
+                @Override
+                public String convertModuleName(String moduleBaseName, String moduleName) {
+                    return UriUtil.resolve(moduleBaseName, moduleName);
+                }
                 @Override
                 public String getModuleScript(String moduleName) {
                     return FileUtils.loadModule(moduleName);
@@ -64,12 +68,12 @@ public class JSEngine {
             JSThread jsThread = new JSThread();
             jsThread.handler = handler;
             jsThread.thread = handlerThread;
-            jsThread.jsContext = jsContext;
+            jsThread.jsContext = (QuickJSContext) objects[0];
             jsThread.retain = 0;
             thread = jsThread;
             try {
                 jsThread.postVoid((ctx, globalThis) -> {
-                    jsThread.init();
+                    jsThread.init(cls);
                     return null;
                 });
             } catch (Throwable throwable) {

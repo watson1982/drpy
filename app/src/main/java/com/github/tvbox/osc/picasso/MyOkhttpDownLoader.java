@@ -20,6 +20,7 @@ import androidx.annotation.VisibleForTesting;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+
 import com.quickjs.android.JSUtils;
 import com.squareup.picasso.Downloader;
 

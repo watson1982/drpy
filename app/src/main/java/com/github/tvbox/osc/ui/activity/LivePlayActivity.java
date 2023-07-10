@@ -51,6 +51,7 @@ import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
+import com.quickjs.android.JSUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -570,20 +571,20 @@ public class LivePlayActivity extends BaseActivity {
         timeFormat.setTimeZone(TimeZone.getTimeZone("GMT+8:00"));
         String[] epgInfo = EpgUtil.getEpgInfo(channelName);
         String epgTagName = channelName;
-        if (epgInfo != null && !epgInfo[1].isEmpty()) {
+        if (epgInfo != null && !JSUtils.isEmpty(epgInfo[1])) {
             epgTagName = epgInfo[1];
         }
         epgListAdapter.CanBack(currentLiveChannelItem.getinclude_back());
 //        epgListAdapter.setNewData(arrayList);
         UrlHttpUtil.get("http://diyp.112114.xyz/?ch=" + URLEncoder.encode(epgTagName) + "&date=" + timeFormat.format(date), new CallBackUtil.CallBackString() {
             public void onFailure(int i, String str) {
-                showEpg(date, new ArrayList());
+                showEpg(date, new ArrayList<>());
                 showBottomEpg();
             }
 
             public void onResponse(String paramString) {
 
-                ArrayList arrayList = new ArrayList();
+                ArrayList<Epginfo> arrayList = new ArrayList<>();
 
                 try {
                     if (paramString.contains("epg_data")) {

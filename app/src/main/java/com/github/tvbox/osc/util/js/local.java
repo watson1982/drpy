@@ -2,8 +2,8 @@ package com.github.tvbox.osc.util.js;
 
 import androidx.annotation.Keep;
 
-import com.quickjs.android.JSMethod;
 import com.orhanobut.hawk.Hawk;
+import com.quickjs.android.JSMethod;
 
 public class local {
     @Keep

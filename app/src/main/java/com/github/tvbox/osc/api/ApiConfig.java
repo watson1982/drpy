@@ -8,24 +8,25 @@ import android.util.Base64;
 import com.github.catvod.crawler.JarLoader;
 import com.github.catvod.crawler.JsLoader;
 import com.github.catvod.crawler.Spider;
-import com.github.catvod.crawler.SpiderNull;
+
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.base.App;
+import com.github.tvbox.osc.bean.DriveFolderFile;
 import com.github.tvbox.osc.bean.IJKCode;
 import com.github.tvbox.osc.bean.LiveChannelGroup;
 import com.github.tvbox.osc.bean.LiveChannelItem;
 import com.github.tvbox.osc.bean.ParseBean;
 import com.github.tvbox.osc.bean.SourceBean;
+import com.github.tvbox.osc.cache.StorageDrive;
 import com.github.tvbox.osc.server.ControlManager;
 import com.github.tvbox.osc.ui.activity.HomeActivity;
 import com.github.tvbox.osc.util.AES;
 import com.github.tvbox.osc.util.AdBlocker;
 import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
+import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.MD5;
 import com.github.tvbox.osc.util.VideoParseRuler;
-import com.github.tvbox.osc.util.js.JSEngine;
-import com.github.tvbox.osc.util.js.SpiderJS;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -34,18 +35,20 @@ import com.lzy.okgo.OkGo;
 import com.lzy.okgo.callback.AbsCallback;
 import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
-import com.undcover.freedom.pyramid.PythonLoader;
+
+import com.github.tvbox.osc.util.TxtSubscribe;
+import com.quickjs.android.JSUtils;
 
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -58,7 +61,7 @@ import java.util.regex.Pattern;
  * @description:
  */
 public class ApiConfig {
-    private static ApiConfig instance;
+    private static volatile ApiConfig instance;
     private LinkedHashMap<String, SourceBean> sourceBeanList;
     private SourceBean mHomeSource;
     private ParseBean mDefaultParse;
@@ -70,9 +73,10 @@ public class ApiConfig {
     public String wallpaper = "";
     private static final Pattern pattern = Pattern.compile("[A-Za-z0]{8}\\*\\*");
     private SourceBean emptyHome = new SourceBean();
+    public List<DriveFolderFile> drives;
 
     private JarLoader jarLoader = new JarLoader();
-
+    private JsLoader jsLoader = new JsLoader();
 
     private ApiConfig() {
         sourceBeanList = new LinkedHashMap<>();
@@ -130,7 +134,7 @@ public class ApiConfig {
     public void loadConfig(boolean useCache, LoadConfigCallback callback, Activity activity) {
         // Embedded Source : Update in Strings.xml if required
         String apiUrl = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
-        if (apiUrl.isEmpty()) {
+        if (JSUtils.isEmpty(apiUrl)) {
             callback.error("-1");
             return;
         }
@@ -228,7 +232,7 @@ public class ApiConfig {
         String md5 = urls.length > 1 ? urls[1].trim() : "";
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/csp.jar");
 
-        if (!md5.isEmpty() || useCache) {
+        if (!JSUtils.isEmpty(md5) || useCache) {
             if (cache.exists() && (useCache || MD5.getFileMd5(cache).equalsIgnoreCase(md5))) {
                 if (jarLoader.load(cache.getAbsolutePath())) {
                     callback.success();
@@ -265,6 +269,7 @@ public class ApiConfig {
             @Override
             public void onSuccess(Response<File> response) {
                 if (response.body().exists()) {
+                    jsLoader.load();
                     if (jarLoader.load(response.body().getAbsolutePath())) {
                         callback.success();
                     } else {
@@ -296,8 +301,6 @@ public class ApiConfig {
     }
 
     private void parseJson(String apiUrl, String jsonStr) {
-        // pyramid
-        PythonLoader.getInstance().setConfig(jsonStr);
 
         JsonObject infoJson = new Gson().fromJson(jsonStr, JsonObject.class);
         // spider
@@ -340,6 +343,27 @@ public class ApiConfig {
             else
                 setSourceBean(sh);
         }
+        if (infoJson.has("drives")) {
+            JsonArray asJsonArray = infoJson.get("drives").getAsJsonArray();
+            this.drives = new ArrayList<>();
+            try {
+                for (JsonElement jsonElement : asJsonArray) {
+                    JsonObject jsonObject2 = (JsonObject) jsonElement;
+                    StorageDrive storageDrive = new StorageDrive();
+                    JsonObject config = new JsonObject();
+                    config.addProperty("url", jsonObject2.get("server").getAsString());
+                    config.addProperty("password", "");
+                    config.addProperty("initPath", "/");
+                    storageDrive.name = jsonObject2.get("name").getAsString();
+                    storageDrive.configJson = config.toString();
+                    storageDrive.type = jsonObject2.get("type").getAsString().equals("alist")?2:1;
+                    this.drives.add(new DriveFolderFile(storageDrive));
+                }
+            } catch (Exception e4) {
+                e4.printStackTrace();
+            }
+        }
+
         // 需要使用vip解析的flag
         vipParseFlags = DefaultConfig.safeJsonStringList(infoJson, "flags");
         // 解析地址
@@ -381,7 +405,7 @@ public class ApiConfig {
 
                 //clan
                 String extUrl = Uri.parse(url).getQueryParameter("ext");
-                if (extUrl != null && !extUrl.isEmpty()) {
+                if (extUrl != null && !JSUtils.isEmpty(extUrl)) {
                     String extUrlFix;
                     if(extUrl.startsWith("http") || extUrl.startsWith("clan://")){
                         extUrlFix = extUrl;
@@ -531,7 +555,7 @@ public class ApiConfig {
         }
     }
     private void putLiveHistory(String url) {
-        if (!url.isEmpty()) {
+        if (!JSUtils.isEmpty(url)) {
             ArrayList<String> liveHistory = Hawk.get(HawkConfig.LIVE_HISTORY, new ArrayList<String>());
             if (!liveHistory.contains(url))
                 liveHistory.add(0, url);
@@ -542,7 +566,7 @@ public class ApiConfig {
     }
 
     public static void putEPGHistory(String url) {
-        if (!url.isEmpty()) {
+        if (!JSUtils.isEmpty(url)) {
             ArrayList<String> epgHistory = Hawk.get(HawkConfig.EPG_HISTORY, new ArrayList<String>());
             if (!epgHistory.contains(url))
                 epgHistory.add(0, url);
@@ -601,40 +625,29 @@ public class ApiConfig {
     }
 
     public Spider getCSP(SourceBean sourceBean) {
-        if (sourceBean.getApi().toLowerCase().endsWith(".js") || sourceBean.getApi().toLowerCase().contains(".js?")) {
-            return new JsLoader().getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
+        if (sourceBean.getApi().toLowerCase().endsWith(".js")) {
+            return jsLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
         }
-        // Getting Pyramid api
-        if (sourceBean.getApi().startsWith("py_")) {
-            try {
-                return PythonLoader.getInstance().getSpider(sourceBean.getKey(), sourceBean.getExt());
-            } catch (Exception e) {
-                e.printStackTrace();
-                return new SpiderNull();
-            }
-        }
+
         return jarLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
     }
 
     public Object[] proxyLocal(Map<String, String> param) {
-        // Getting pyramid api
         try {
             String doStr = param.get("do");
-            if (param.containsKey("api")) {
-                if (doStr.equals("ck"))
-                    return PythonLoader.getInstance().proxyLocal("", "", param);
-                SourceBean sourceBean = ApiConfig.get().getSource(doStr);
-                return PythonLoader.getInstance().proxyLocal(sourceBean.getKey(), sourceBean.getExt(), param);
-            } else {
-                if (doStr.equals("live")) {
-                    return PythonLoader.getInstance().proxyLocal("", "", param);
-                } else if (doStr.equals("ext")) {
-                    String ext = param.get("txt");
-                    return new Object[]{200, "text/plain; charset=utf-8", new ByteArrayInputStream(Base64.decode(ext, Base64.URL_SAFE))};
+            if (doStr.equals("live")) {
+                String type = param.get("type");
+                if (type.equals("txt")) {
+                    String ext = param.get("ext");
+                    ext = new String(Base64.decode(ext, Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP), "UTF-8");
+                    return TxtSubscribe.load(ext);
                 }
             }
+            if (doStr.equals("js")) {
+                return jsLoader.proxyInvoke(param);
+            }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.e("proxyLocal", e);
         }
 
         return jarLoader.proxyInvoke(param);

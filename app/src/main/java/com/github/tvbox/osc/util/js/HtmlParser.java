@@ -22,7 +22,7 @@ public class HtmlParser {
     private static String pdfa_html = "";
     private static final Pattern p = Pattern.compile("url\\((.*?)\\)", Pattern.MULTILINE | Pattern.DOTALL);
     private static final Pattern NOADD_INDEX = Pattern.compile(":eq|:lt|:gt|:first|:last|^body$|^#");  // 不自动加eq下标索引
-    private static final Pattern URLJOIN_ATTR = Pattern.compile("(url|src|href|-original|-src|-play|-url)$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);  // 需要自动urljoin的属性
+    private static final Pattern URLJOIN_ATTR = Pattern.compile("(url|src|href|-original|-src|-play|-url|style)$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);  // 需要自动urljoin的属性
     private static Document pdfh_doc = null;
     private static Document pdfa_doc = null;
 
@@ -237,8 +237,7 @@ public class HtmlParser {
         }
 
         List<String> eleHtml = new ArrayList<>();
-        for (int i = 0; i < ret.size(); i++) {
-            Element element1 = ret.get(i);
+        for (Element element1 : ret) {
             eleHtml.add(element1.outerHtml());
         }
         return eleHtml;
@@ -262,8 +261,8 @@ public class HtmlParser {
 
         if (painfo.excludes != null && !ret.isEmpty()) {
             ret = ret.clone(); //克隆一个, 免得直接remove会影响doc的缓存
-            for (int i = 0; i < painfo.excludes.size(); i++) {
-                ret.select(painfo.excludes.get(i)).remove();
+            for (String exclude : painfo.excludes) {
+                ret.select(exclude).remove();
             }
         }
         return ret;
@@ -285,9 +284,8 @@ public class HtmlParser {
             }
         }
         List<String> new_vod_list = new ArrayList<>();
-        for(int i = 0; i < ret.size(); i++){
-            String it = ret.get(i).outerHtml();
-            new_vod_list.add(parseDomForUrl(it, list_text, "").trim() + '$' + parseDomForUrl(it, list_url, add_url));
+        for(Element it : ret){
+            new_vod_list.add(parseDomForUrl(it.outerHtml(), list_text, "").trim() + '$' + parseDomForUrl(it.outerHtml(), list_url, add_url));
         }
         return new_vod_list;
     }

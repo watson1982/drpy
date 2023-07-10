@@ -65,11 +65,11 @@ public class DriveFolderFile {
     }
 
     public String getAccessingPathStr() {
-        String path = "";
+        StringBuilder path = new StringBuilder();
         for (String pathItem : accessingPath) {
-            path += (pathItem + "/");
+            path.append(pathItem).append("/");
         }
-        return path;
+        return path.toString();
     }
 
     public boolean isDrive() {

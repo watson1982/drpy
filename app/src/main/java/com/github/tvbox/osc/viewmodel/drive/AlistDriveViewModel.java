@@ -1,5 +1,7 @@
 package com.github.tvbox.osc.viewmodel.drive;
 
+import android.text.TextUtils;
+
 import com.github.tvbox.osc.bean.DriveFolderFile;
 import com.github.tvbox.osc.util.UA;
 import com.github.tvbox.osc.util.urlhttp.OkHttpUtil;
@@ -85,6 +87,7 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                         if(currentDrive.version == 2){
                             PostRequest<String> request = OkGo.<String>post(webLink + "/api/public/path").tag("drive");
                             JSONObject requestBody = new JSONObject();
+
                             requestBody.put("path", targetPath.isEmpty() ? "/" : targetPath);
                             requestBody.put("password", currentDrive.getConfig().get("password").getAsString());
                             requestBody.put("page_num", 1);
@@ -94,8 +97,14 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                             request.execute(new AbsCallback<String>() {
 
                                 @Override
-                                public String convertResponse(okhttp3.Response response) throws Throwable {
-                                    return response.body().string();
+                                public String convertResponse(okhttp3.Response response){
+                                    try {
+                                        return response.body().string();
+                                    } catch (Exception ex) {
+                                        if (callback != null)
+                                            callback.fail("无法访问，请注意地址格式");
+                                    }
+                                    return "";
                                 }
 
                                 @Override
@@ -154,8 +163,14 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                             request.execute(new AbsCallback<String>() {
 
                                 @Override
-                                public String convertResponse(okhttp3.Response response) throws Throwable {
-                                    return response.body().string();
+                                public String convertResponse(okhttp3.Response response) {
+                                    try {
+                                        return response.body().string();
+                                    } catch (Exception ex) {
+                                        if (callback != null)
+                                            callback.fail("无法访问，请注意地址格式");
+                                    }
+                                    return "";
                                 }
 
                                 @Override
@@ -199,6 +214,8 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                         }
                     } catch (Exception ex) {
                         ex.printStackTrace();
+                        if (callback != null)
+                            callback.fail("无法访问，请注意地址格式");
                     }
                 }
             }.start();

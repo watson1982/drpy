@@ -5,23 +5,24 @@ import android.util.Base64;
 
 import androidx.annotation.Keep;
 
-import com.github.tvbox.osc.event.LogEvent;
+import com.github.tvbox.osc.server.ControlManager;
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.OkGoHelper;
+
+import com.google.gson.Gson;
+import com.lzy.okgo.OkGo;
+
+
 import com.quickjs.android.JSArray;
 import com.quickjs.android.JSCallFunction;
 import com.quickjs.android.JSMethod;
 import com.quickjs.android.JSObject;
-import com.quickjs.android.JSParameter;
 import com.quickjs.android.JSUtils;
 import com.quickjs.android.QuickJSContext;
-import com.google.gson.Gson;
-import com.lzy.okgo.OkGo;
 
-import org.greenrobot.eventbus.EventBus;
+
 import org.json.JSONObject;
 
-import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.Iterator;
 import java.util.Set;
@@ -39,7 +40,7 @@ public class JSThread {
     public QuickJSContext jsContext;
     public Handler handler;
     public Thread thread;
-    public volatile byte retain;
+    public byte retain;
     private static final String TAG = "JSEngine";
     private OkHttpClient okHttpClient;
 
@@ -141,7 +142,7 @@ public class JSThread {
     }
 
     private void initProperty() {
-        Method[] methods = this.getClass().getMethods();
+        Method[] methods = this.getClass().getDeclaredMethods();
         for (Method method : methods) {
             JSMethod an = method.getAnnotation(JSMethod.class);
             if (an == null) continue;
@@ -156,15 +157,55 @@ public class JSThread {
                 }
             });
 
-            if (JSUtils.isNotEmpty(an.alias())) {
+            /*if (JSUtils.isNotEmpty(an.alias())) {
                 getJsContext().evaluate("var " + an.alias() + " = " + functionName + ";\n");
+            }*/
+        }
+    }
+
+    public void init(Class<?> cls) {
+        initProperty();
+        initConsole();
+        if(cls != null){
+            getGlobalObj().setProperty("jsapi", getJsContext().createNewJSObject());
+            Class<?>[] classes = cls.getDeclaredClasses();
+            JSObject apiObj = getGlobalObj().getJSObject("jsapi");
+            LOG.e("cls","" + classes.length);
+            for (Class<?> classe : classes) {
+                Object javaObj = null;
+                try {
+                    javaObj = classe.getDeclaredConstructor(cls).newInstance(cls.getDeclaredConstructor(QuickJSContext.class).newInstance(getJsContext()));
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+                if (javaObj == null) {
+                    throw new NullPointerException("The JavaObj cannot be null. An error occurred in newInstance!");
+                }
+                JSObject claObj = getJsContext().createNewJSObject();
+                Method[] methods = classe.getDeclaredMethods();
+                for (Method method : methods) {
+                    if (method.isAnnotationPresent(JSMethod.class)) {
+                        Object finalJavaObj = javaObj;
+                        claObj.setProperty(method.getName(), args -> {
+                            try {
+                                return method.invoke(finalJavaObj, args);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                            return null;
+                        });
+                    }
+                }
+                apiObj.setProperty(classe.getSimpleName(), claObj);
+                LOG.e("cls", classe.getSimpleName());
             }
         }
     }
 
-    public void init() {
-        initProperty();
-        initConsole();
+    @Keep
+    @JSMethod
+    public String getProxy(boolean local) {
+        return ControlManager.get().getAddress(local) + "proxy?do=js";
     }
 
     @Keep
@@ -174,8 +215,8 @@ public class JSThread {
     }
 
     @Keep
-    @JSMethod(alias = "pdfh")
-    public String parseDomForHtml(String html, String rule) {
+    @JSMethod
+    public String pdfh(String html, String rule) {
         try {
             return HtmlParser.parseDomForUrl(html, rule, "");
         } catch (Exception th) {
@@ -185,8 +226,8 @@ public class JSThread {
     }
 
     @Keep
-    @JSMethod(alias = "pdfa")
-    public Object parseDomForArray(String html, String rule) {
+    @JSMethod
+    public Object pdfa(String html, String rule) {
         try {
             return getJsContext().parse(new Gson().toJson(HtmlParser.parseDomForArray(html, rule)));
         } catch (Exception th) {
@@ -196,8 +237,8 @@ public class JSThread {
     }
 
     @Keep
-    @JSMethod(alias = "pdfl")
-    public Object parseDomForList(String html, String p1, String list_text, String list_url, String urlKey) {
+    @JSMethod
+    public Object pdfl(String html, String p1, String list_text, String list_url, String urlKey) {
         try {
             return getJsContext().parse(new Gson().toJson(HtmlParser.parseDomForList(html, p1, list_text, list_url, urlKey)));
         } catch (Exception th) {
@@ -207,8 +248,8 @@ public class JSThread {
     }
 
     @Keep
-    @JSMethod(alias = "pd")
-    public String parseDom(String html, String rule, String urlKey) {
+    @JSMethod
+    public String pd(String html, String rule, String urlKey) {
         try {
             return HtmlParser.parseDomForUrl(html, rule, urlKey);
         } catch (Exception th) {
@@ -218,10 +259,11 @@ public class JSThread {
     }
 
     @Keep
-    @JSMethod(alias = "req")
-    public Object ajax(String url, Object o2) {
+    @JSMethod
+    public Object req(String url, Object o2) {
         try {
-            JSONObject opt = ((JSObject) o2).toJSONObject();
+            //JSONObject opt = ((JSObject) o2).toJSONObject();
+            JSONObject opt = new JSONObject(jsContext.stringify((JSObject) o2));
             Headers.Builder headerBuilder = new Headers.Builder();
             JSONObject optHeader = opt.optJSONObject("headers");
             if (optHeader != null) {
@@ -249,12 +291,12 @@ public class JSThread {
             if (method.equals("post")) {
                 RequestBody body = null;
                 String data = opt.optString("data", "").trim();
-                if (!data.isEmpty()) {
+                if (!JSUtils.isEmpty(data)) {
                     body = RequestBody.create(MediaType.parse("application/json"), data);
                 }
                 if (body == null) {
                     String dataBody = opt.optString("body", "").trim();
-                    if (!dataBody.isEmpty() && contentType != null) {
+                    if (!JSUtils.isEmpty(dataBody) && contentType != null) {
                         body = RequestBody.create(MediaType.parse(contentType), opt.optString("body", ""));
                     }
                 }
@@ -309,9 +351,9 @@ public class JSThread {
     }
 
     void initConsole() {
-        getGlobalObj().setProperty( "local", local.class);
-        jsContext.evaluate("var console = {};");
-        JSObject console = (JSObject) jsContext.getGlobalObject().getProperty("console");
+        getGlobalObj().setProperty("local", local.class);
+        getGlobalObj().setProperty("console", jsContext.createNewJSObject());
+        JSObject console = jsContext.getGlobalObject().getJSObject("console");
         console.setProperty("log", new JSCallFunction() {
             @Override
             public Object call(Object... args) {

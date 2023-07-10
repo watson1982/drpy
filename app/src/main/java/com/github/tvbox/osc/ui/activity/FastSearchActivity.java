@@ -42,12 +42,14 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jieba_android.JiebaSegmenter;
 import com.jieba_android.RequestCallback;
+import com.quickjs.android.JSUtils;
 
 /**
  * @author pj567
@@ -275,9 +277,9 @@ public class FastSearchActivity extends BaseActivity {
         mGridView.setVisibility(View.GONE);
         mGridViewFilter.setVisibility(View.VISIBLE);
         String key = spNames.get(spName);
-        if (key.isEmpty()) return;
+        if (JSUtils.isEmpty(key)) return;
 
-        if (searchFilterKey == key) return;
+        if (Objects.equals(searchFilterKey, key)) return;
         searchFilterKey = key;
 
         List<Movie.Video> list = resultVods.get(key);

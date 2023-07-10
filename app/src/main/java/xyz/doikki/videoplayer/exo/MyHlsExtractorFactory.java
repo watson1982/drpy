@@ -17,7 +17,7 @@ import com.google.android.exoplayer2.extractor.ts.Ac3Extractor;
 import com.google.android.exoplayer2.extractor.ts.Ac4Extractor;
 import com.google.android.exoplayer2.extractor.ts.AdtsExtractor;
 import com.google.android.exoplayer2.extractor.ts.DefaultTsPayloadReaderFactory;
-import com.google.android.exoplayer2.extractor.ts.TsExtractor;
+import com.google.android.exoplayer2.extractor.ts.MyTsExtractor;
 import com.google.android.exoplayer2.metadata.Metadata;
 import com.google.android.exoplayer2.source.hls.HlsExtractorFactory;
 import com.google.android.exoplayer2.source.hls.HlsTrackMetadataEntry;
@@ -66,7 +66,7 @@ public final class MyHlsExtractorFactory implements HlsExtractorFactory {
      * @param payloadReaderFactoryFlags Flags to add when constructing any {@link
      *     DefaultTsPayloadReaderFactory} instances. Other flags may be added on top of {@code
      *     payloadReaderFactoryFlags} when creating {@link DefaultTsPayloadReaderFactory}.
-     * @param exposeCea608WhenMissingDeclarations Whether created {@link TsExtractor} instances should
+     * @param exposeCea608WhenMissingDeclarations Whether created {@link MyTsExtractor} instances should
      *     expose a CEA-608 track should the master playlist contain no Closed Captions declarations.
      *     If the master playlist contains any Closed Captions declarations, this flag is ignored.
      */
@@ -168,7 +168,7 @@ public final class MyHlsExtractorFactory implements HlsExtractorFactory {
         }
     }
 
-    private static TsExtractor createTsExtractor(
+    private static MyTsExtractor createTsExtractor(
             @DefaultTsPayloadReaderFactory.Flags int userProvidedPayloadReaderFactoryFlags,
             boolean exposeCea608WhenMissingDeclarations,
             Format format,
@@ -203,8 +203,8 @@ public final class MyHlsExtractorFactory implements HlsExtractorFactory {
             }
         }
 
-        return new TsExtractor(
-                TsExtractor.MODE_HLS,
+        return new MyTsExtractor(
+                MyTsExtractor.MODE_HLS,
                 timestampAdjuster,
                 new DefaultTsPayloadReaderFactory(payloadReaderFactoryFlags, muxedCaptionFormats));
     }

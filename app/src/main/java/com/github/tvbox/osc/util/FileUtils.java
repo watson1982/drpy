@@ -9,6 +9,7 @@ import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.server.ControlManager;
 
 import com.github.tvbox.osc.util.urlhttp.OkHttpUtil;
+import com.orhanobut.hawk.Hawk;
 import com.quickjs.android.JSUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -48,7 +49,7 @@ public class FileUtils {
             }
             JsonObject asJsonObject = (new Gson().fromJson(code, JsonObject.class)).getAsJsonObject();
             if (((long) asJsonObject.get("expires").getAsInt()) > System.currentTimeMillis() / 1000) {
-                return asJsonObject.get("data").getAsString();
+                return Base64.encodeToString(asJsonObject.get("data").getAsString().getBytes(), Base64.URL_SAFE);
             }
             recursiveDelete(open(name));
             return "";
@@ -61,7 +62,7 @@ public class FileUtils {
         try {
             JSONObject jSONObject = new JSONObject();
             jSONObject.put("expires", (int) (time + (System.currentTimeMillis() / 1000)));
-            jSONObject.put("data", data);
+            jSONObject.put("data", new String(Base64.decode(data, Base64.URL_SAFE)));
             writeSimple(jSONObject.toString().getBytes(), open(name));
         } catch (Exception e) {
             e.printStackTrace();
@@ -93,26 +94,26 @@ public class FileUtils {
 
     public static String loadModule(String name) {
         try {
-            if(name.contains("cheerio.min.js")){
-                name = "cheerio.min.js";
-            } else if(name.contains("crypto-js.js")){
-                name = "crypto-js.js";
-            } else if (name.contains("gbk.js")) {
+            if (name.contains("gbk.js")) {
                 name = "gbk.js";
             } else if (name.contains("模板.js")) {
                 name = "模板.js";
             }
             Matcher m = URLJOIN.matcher(name);
             if (m.find()) {
-                String cache = getCache(MD5.encode(name));
-                if (JSUtils.isEmpty(cache)) {
-                    String netStr = OkHttpUtil.get(name);
-                    if (!TextUtils.isEmpty(netStr)) {
-                        setCache(604800, MD5.encode(name), netStr);
+                if(!Hawk.get(HawkConfig.DEBUG_OPEN, false)) {
+                    String cache = getCache(MD5.encode(name));
+                    if (JSUtils.isEmpty(cache)) {
+                        String netStr = OkHttpUtil.get(name);
+                        if (!TextUtils.isEmpty(netStr)) {
+                            setCache(604800, MD5.encode(name), netStr);
+                        }
+                        return netStr;
                     }
-                    return netStr;
+                    return cache;
+                } else {
+                    return OkHttpUtil.get(name);
                 }
-                return cache;
             } else if (name.startsWith("assets://")) {
                 return getAsOpen(name.substring(9));
             } else if (isAsFile(name, "js/lib")) {
@@ -186,19 +187,12 @@ public class FileUtils {
     }
 
     public static void copyFile(File source, File dest) throws IOException {
-        InputStream is = null;
-        OutputStream os = null;
-        try {
-            is = new FileInputStream(source);
-            os = new FileOutputStream(dest);
+        try (InputStream is = new FileInputStream(source); OutputStream os = new FileOutputStream(dest)) {
             byte[] buffer = new byte[1024];
             int length;
             while ((length = is.read(buffer)) > 0) {
                 os.write(buffer, 0, length);
             }
-        } finally {
-            is.close();
-            os.close();
         }
     }
     public static String getRootPath() {

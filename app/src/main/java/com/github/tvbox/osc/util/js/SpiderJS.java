@@ -6,55 +6,46 @@ import com.github.catvod.crawler.Spider;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.MD5;
-import com.google.gson.Gson;
+
 import com.quickjs.android.JSArray;
-import com.quickjs.android.JSModule;
 import com.quickjs.android.JSObject;
 import com.quickjs.android.JSUtils;
 
+import org.json.JSONArray;
+
+import java.io.ByteArrayInputStream;
 import java.util.HashMap;
 import java.util.List;
-import java.util.UUID;
+import java.util.Map;
+import java.util.regex.Pattern;
 
 public class SpiderJS extends Spider {
 
     private String key;
     private String js;
     private String ext;
+    private Class<?> cls;
     private JSObject jsObject = null;
     private JSThread jsThread = null;
+    private final Pattern pattern = Pattern.compile("/\\*.+?\\*/", Pattern.DOTALL);
 
-    public SpiderJS(String key, String js, String ext) {
+    public SpiderJS(String key, String js, String ext, Class<?> cls) {
         this.key = key;
         this.js = js;
         this.ext = ext;
+        this.cls = cls;
     }
 
-    void checkLoaderJS() {
+    private void checkLoaderJS() {
         if (jsThread == null) {
-            jsThread = JSEngine.getInstance().getJSThread();
+            jsThread = JSEngine.getInstance().getJSThread(cls);
         }
         if (jsObject == null && jsThread != null) {
             try {
                 jsThread.postVoid((ctx, globalThis) -> {
                     String moduleKey = "__" + MD5.encode(key) + "__";
                     String jsContent = FileUtils.loadModule(js);
-                    try {
-                        if (js.contains(".js?")) {
-                            int spIdx = js.indexOf(".js?");
-                            String[] query = js.substring(spIdx + 4).split("[&=]");
-                            js = js.substring(0, spIdx);
-                            for (int i = 0; i < query.length; i += 2) {
-                                String key = query[i];
-                                String val = query[i + 1];
-                                String sub = JSModule.convertModuleName(js, val);
-                                String content = FileUtils.loadModule(sub);
-                                jsContent = jsContent.replace("__" + key.toUpperCase() + "__", content);
-                            }
-                        }
-                    } catch (Exception e) {
-                        LOG.e(e);
-                    }
+
                     if(jsContent.contains("export default{") || jsContent.contains("export default {")){
                         jsContent = jsContent.replaceAll("export default.*?[{]", "globalThis." + moduleKey+" = {");
                     } else {
@@ -64,7 +55,7 @@ public class SpiderJS extends Spider {
                     jsObject = (JSObject) ctx.getProperty(globalThis, moduleKey);
                     //jsObject.getJSFunction("init").call(ext);
                     ext = FileUtils.loadModule(ext);
-                    jsObject.getJSFunction("init").call(JSUtils.isJsonAr(ext)?ctx.parse(ext):ext);
+                    jsObject.getJSFunction("init").call(JSUtils.isJsonType(ext)?ctx.parse(ext):cleanCommons(ext));
                     return null;
                 });
             } catch (Throwable throwable) {
@@ -73,7 +64,12 @@ public class SpiderJS extends Spider {
         }
     }
 
-    String postFunc(String func, Object... args) {
+    private String cleanCommons(String content) {
+        //content = content.replaceAll("//.+\\r\\n", "");
+        return pattern.matcher(content).replaceAll("");
+    }
+
+    private String postFunc(String func, Object... args) {
         checkLoaderJS();
         if (jsObject != null) {
             try {
@@ -82,7 +78,7 @@ public class SpiderJS extends Spider {
                 LOG.e(throwable);
             }
         }
-        return "";
+        return null;
     }
 
     @Override
@@ -148,4 +144,45 @@ public class SpiderJS extends Spider {
     public String searchContent(String key, boolean quick) {
         return postFunc("search", key, quick);
     }
+
+    public Object[] proxyInvoke(Map<String, String> params) {
+        checkLoaderJS();
+        try {
+            return jsThread.post((ctx, globalThis) -> {
+                try {
+                    JSObject o = ctx.createNewJSObject();
+                    if (params != null) {
+                        for (String s : params.keySet()) {
+                            o.setProperty(s, params.get(s));
+                        }
+                    }
+                    JSONArray opt = new JSONArray(((JSArray) jsObject.getJSFunction("proxy").call(new Object[]{o})).stringify());
+                    Object[] result = new Object[3];
+                    result[0] = opt.opt(0);
+                    result[1] = opt.opt(1);
+                    Object obj = opt.opt(2);
+                    ByteArrayInputStream baos;
+                    if (obj instanceof JSONArray) {
+                        JSONArray json = (JSONArray) obj;
+                        byte[] b = new byte[json.length()];
+                        for (int i = 0; i < json.length(); i++) {
+                            b[i] = (byte) json.optInt(i);
+                        }
+                        baos = new ByteArrayInputStream(b);
+                    } else {
+                        baos = new ByteArrayInputStream(opt.opt(2).toString().getBytes());
+                    }
+                    result[2] = baos;
+                    return result;
+                } catch (Throwable throwable) {
+                    LOG.e(throwable);
+                    return new Object[0];
+                }
+            });
+        } catch (Throwable throwable) {
+            LOG.e(throwable);
+            return new Object[0];
+        }
+    }
+
 }

@@ -1,5 +1,6 @@
 package com.quickjs.android;
 
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -101,27 +102,25 @@ public class JSObject {
         setProperty(name, jsObj);
     }
 
-    public void setProperty(Class clazz) {
-        Method[] methods = clazz.getMethods();
+    public void setProperty(Class<?> clazz, Object javaObj) {
+        JSObject jsObj = context.createNewJSObject();
+        Method[] methods = clazz.getDeclaredMethods();
         for (Method method : methods) {
-            JSMethod an = method.getAnnotation(JSMethod.class);
-            if (an == null) continue;
-            String functionName = method.getName();
-            context.getGlobalObject().setProperty(functionName, args -> {
-                try {
-                    return method.invoke(clazz, args);
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                }
-            });
-
-            if (JSUtils.isNotEmpty(an.alias())) {
-                context.evaluate("var " + an.alias() + " = " + functionName + ";\n");
+            if (method.isAnnotationPresent(JSMethod.class)) {
+                jsObj.setProperty(method.getName(), args -> {
+                    try {
+                        return method.invoke(javaObj, args);
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                    return null;
+                });
             }
         }
+
+        setProperty(clazz.getSimpleName(), jsObj);
     }
-	
+
     public String getString(String name) {
         Object value = getProperty(name);
         return value instanceof String ? (String) value : null;
@@ -273,7 +272,7 @@ public class JSObject {
     public boolean contains(String key) {
         return context.contains(this, key);
     }
-	
+
     public JSONObject toJSONObject() {
         JSONObject jsonObject = new JSONObject();
         String[] keys = getKeys();
@@ -304,7 +303,6 @@ public class JSObject {
         }
         return jsonObject;
     }
-	
     public String stringify() {
         return context.stringify(this);
     }
