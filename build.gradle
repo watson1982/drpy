@@ -16,10 +16,14 @@ buildscript {
         maven { url "https://chaquo.com/maven" }
         maven { url "https://jitpack.io" }
         maven { url 'https://download.01.org/crosswalk/releases/crosswalk/android/maven2' }
+        maven {
+            url 'http://4thline.org/m2'
+            allowInsecureProtocol = true
+        }
     }
     dependencies {
-        classpath "com.android.tools.build:gradle:4.2.2"
-        classpath "com.chaquo.python:gradle:12.0.1"
+        classpath "com.android.tools.build:gradle:7.1.3"
+        //classpath "com.chaquo.python:gradle:12.0.1"
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -43,6 +47,10 @@ allprojects {
         maven { url "https://chaquo.com/maven" }
         maven { url "https://jitpack.io" }
         maven { url 'https://download.01.org/crosswalk/releases/crosswalk/android/maven2' }
+        maven {
+            url 'http://4thline.org/m2'
+            allowInsecureProtocol = true
+        }
     }
 }
 ext {

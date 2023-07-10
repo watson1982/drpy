@@ -47,12 +47,11 @@ android {
         }
 
         ndk {
-            abiFilters 'arm64-v8a'
-            //abiFilters "armeabi-v7a"
+            //abiFilters 'arm64-v8a'
+            abiFilters "armeabi-v7a"
         }
 
     }
-
 
     packagingOptions {
         exclude 'META-INF/androidx.localbroadcastmanager_localbroadcastmanager.version'
@@ -109,6 +108,7 @@ android {
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
+        disable 'UnsafeOptInUsageError'
     }
 
     buildFeatures {
@@ -129,7 +129,7 @@ android {
 }
 
 dependencies {
-    api fileTree(dir: "libs", include: ["*.jar"])
+    api fileTree(include: ['*.jar'], dir: 'libs')
     // for WebDAV
     implementation('com.github.thegrizzlylabs:sardine-android:0.5') {
         exclude group: 'com.squareup.okhttp3'
@@ -146,7 +146,6 @@ dependencies {
     implementation 'com.google.android.material:material:1.4.0'
     implementation files('libs\\thunder.jar', 'libs\\dec-0.1.2.jar')
     implementation project(path: ':jieba_android')
-    //implementation files('libs\\chaquopy_java-12.0.1.jar')
     annotationProcessor 'androidx.room:room-compiler:2.3.0'
     implementation 'androidx.room:room-runtime:2.3.0'
     implementation 'androidx.multidex:multidex:2.0.1'
@@ -176,7 +175,7 @@ dependencies {
 
     //弹窗组件
     //implementation project(":XPopup")
-    implementation project(":pyramid")
+    //implementation project(":pyramid")
 
     implementation('org.xwalk:xwalk_shared_library:23.53.589.4') {
         exclude group: 'com.android.support'
@@ -185,8 +184,8 @@ dependencies {
     implementation 'com.owen:tv-recyclerview:3.0.0'
 
     implementation 'com.github.getActivity:XXPermissions:13.6'
-    implementation 'org.jsoup:jsoup:1.15.3'
-    implementation "cn.wanghaomiao:JsoupXpath:2.5.0"
+    api 'org.jsoup:jsoup:1.15.4'
+    //implementation "cn.wanghaomiao:JsoupXpath:2.5.0"
     implementation 'com.github.hedzr:android-file-chooser:v1.2.0-final'
     implementation 'commons-io:commons-io:2.11.0'
     implementation 'com.googlecode.juniversalchardet:juniversalchardet:1.0.3'
