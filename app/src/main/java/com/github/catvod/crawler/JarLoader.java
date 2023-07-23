@@ -4,9 +4,8 @@ import android.content.Context;
 
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.util.MD5;
-import com.github.tvbox.osc.util.js.SpiderJS;
 import com.lzy.okgo.OkGo;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 import org.json.JSONObject;
 
@@ -88,7 +87,7 @@ public class JarLoader {
         if (classLoaders.contains(key))
             return classLoaders.get(key);
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + key + ".jar");
-        if (!JSUtils.isEmpty(md5)) {
+        if (!StringUtils.isEmpty(md5)) {
             if (cache.exists() && MD5.getFileMd5(cache).equalsIgnoreCase(md5)) {
                 loadClassLoader(cache.getAbsolutePath(), key);
                 return classLoaders.get(key);
@@ -125,7 +124,7 @@ public class JarLoader {
         String jarUrl = "";
         String jarMd5 = "";
         String jarKey = "";
-        if (JSUtils.isEmpty(jar)) {
+        if (StringUtils.isEmpty(jar)) {
             jarKey = "main";
         } else {
             String[] urls = jar.split(";md5;");
@@ -147,7 +146,7 @@ public class JarLoader {
         try {
             Spider sp = (Spider) classLoader.loadClass("com.github.catvod.spider." + clsKey).newInstance();
             sp.init(App.getInstance(), ext);
-            if (!JSUtils.isEmpty(jar)) {
+            if (!StringUtils.isEmpty(jar)) {
                 sp.homeContent(false); // 增加此行 应该可以解决部分写的有问题源的历史记录问题 但会增加这个源的首次加载时间 不需要可以已删掉
             }
             spiders.put(key, sp);

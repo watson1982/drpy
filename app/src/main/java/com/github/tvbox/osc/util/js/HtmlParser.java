@@ -2,7 +2,7 @@ package com.github.tvbox.osc.util.js;
 
 import android.text.TextUtils;
 
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -27,7 +27,7 @@ public class HtmlParser {
     private static Document pdfa_doc = null;
 
     public static String joinUrl(String parent, String child) {
-        if (JSUtils.isEmpty(parent)) {
+        if (StringUtils.isEmpty(parent)) {
             return child;
         }
 
@@ -93,7 +93,7 @@ public class HtmlParser {
     }
 
     public static boolean isIndex(String str) {
-        if (JSUtils.isEmpty(str)) {
+        if (StringUtils.isEmpty(str)) {
             return false;
         }
         for (String str2 : new String[]{":eq", ":lt", ":gt", ":first", ":last", "body", "#"}) {
@@ -108,7 +108,7 @@ public class HtmlParser {
     }
 
     public static boolean isUrl(String str) {
-        if (JSUtils.isEmpty(str)) {
+        if (StringUtils.isEmpty(str)) {
             return false;
         }
         for (String str2 : new String[]{"url", "src", "href", "-original", "-play"}) {
@@ -187,7 +187,7 @@ public class HtmlParser {
             }
         }
         String result;
-        if (JSUtils.isNotEmpty(option)) {
+        if (StringUtils.isNotEmpty(option)) {
             if (option.equals("Text")) {
                 result = ret.text();
             } else if (option.equals("Html")) {
@@ -200,7 +200,7 @@ public class HtmlParser {
                         result = m.group(1);
                     }
                 }
-                if (JSUtils.isNotEmpty(result) && JSUtils.isNotEmpty(add_url)) {
+                if (StringUtils.isNotEmpty(result) && StringUtils.isNotEmpty(add_url)) {
                     // 需要自动urljoin的属性
                     Matcher m = URLJOIN_ATTR.matcher(option);
                     //if (isUrl(option)) {

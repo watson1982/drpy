@@ -8,6 +8,7 @@ import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
 
+import com.google.android.exoplayer2.ext.okhttp.OkHttpDataSource;
 import com.google.android.exoplayer2.ext.rtmp.RtmpDataSourceFactory;
 import com.google.android.exoplayer2.source.MediaSource;
 import com.google.android.exoplayer2.source.ProgressiveMediaSource;
@@ -15,7 +16,6 @@ import com.google.android.exoplayer2.source.dash.DashMediaSource;
 import com.google.android.exoplayer2.source.hls.HlsMediaSource;
 import com.google.android.exoplayer2.source.rtsp.RtspMediaSource;
 import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory;
 import com.google.android.exoplayer2.upstream.cache.Cache;
 import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
 import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
@@ -24,14 +24,13 @@ import com.google.android.exoplayer2.util.Util;
 
 import java.io.File;
 import java.lang.reflect.Field;
-import java.util.Iterator;
 import java.util.Map;
 
 import okhttp3.OkHttpClient;
 
 public final class ExoMediaSourceHelper {
 
-    private static ExoMediaSourceHelper sInstance;
+    private static volatile ExoMediaSourceHelper sInstance;
 
     private final String mUserAgent;
     private final Context mAppContext;
@@ -84,7 +83,7 @@ public final class ExoMediaSourceHelper {
         if (isCache) {
             factory = getCacheDataSourceFactory();
         } else {
-            factory = getDataSourceFactory();
+            factory = getHttpDataSourceFactory();
         }
         if (mHttpDataSourceFactory != null) {
             setHeaders(headers);
@@ -122,7 +121,7 @@ public final class ExoMediaSourceHelper {
         }
         return new CacheDataSource.Factory()
                 .setCache(mCache)
-                .setUpstreamDataSourceFactory(getDataSourceFactory())
+                .setUpstreamDataSourceFactory(getHttpDataSourceFactory())
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR);
     }
 
@@ -134,15 +133,6 @@ public final class ExoMediaSourceHelper {
     }
 
     /**
-     * Returns a new DataSource factory.
-     *
-     * @return A new DataSource factory.
-     */
-    private DataSource.Factory getDataSourceFactory() {
-        return new DefaultDataSourceFactory(mAppContext, getHttpDataSourceFactory());
-    }
-
-    /**
      * Returns a new HttpDataSource factory.
      *
      * @return A new HttpDataSource factory.
@@ -150,8 +140,7 @@ public final class ExoMediaSourceHelper {
     private DataSource.Factory getHttpDataSourceFactory() {
         if (mHttpDataSourceFactory == null) {
             mHttpDataSourceFactory = new OkHttpDataSource.Factory(mOkClient)
-                    .setUserAgent(mUserAgent)/*
-                    .setAllowCrossProtocolRedirects(true)*/;
+                    .setUserAgent(mUserAgent);
         }
         return mHttpDataSourceFactory;
     }

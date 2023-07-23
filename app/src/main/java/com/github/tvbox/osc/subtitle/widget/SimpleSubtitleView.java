@@ -12,7 +12,7 @@ import com.github.tvbox.osc.subtitle.DefaultSubtitleEngine;
 import com.github.tvbox.osc.subtitle.SubtitleEngine;
 import com.github.tvbox.osc.subtitle.model.Subtitle;
 import com.github.tvbox.osc.util.MD5;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 import java.util.List;
 
@@ -64,7 +64,7 @@ public class SimpleSubtitleView extends TextView
 
     @Override
     public void onSubtitleChanged(@Nullable final Subtitle subtitle) {
-        if (JSUtils.isEmpty(subtitle)) {
+        if (StringUtils.isEmpty(subtitle)) {
             setText(EMPTY_TEXT);
             return;
         }

@@ -10,7 +10,6 @@ import com.github.tvbox.osc.server.ControlManager;
 
 import com.github.tvbox.osc.util.urlhttp.OkHttpUtil;
 import com.orhanobut.hawk.Hawk;
-import com.quickjs.android.JSUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
@@ -73,7 +72,7 @@ public class FileUtils {
         try {
             if (name.startsWith("http://") || name.startsWith("https://")) {
                 String cache = getCache(MD5.encode(name));
-                if (JSUtils.isEmpty(cache)) {
+                if (StringUtils.isEmpty(cache)) {
                     String netStr = OkHttpUtil.get(name);
                     if (!TextUtils.isEmpty(netStr)) {
                         setCache(604800, MD5.encode(name), netStr);
@@ -103,7 +102,7 @@ public class FileUtils {
             if (m.find()) {
                 if(!Hawk.get(HawkConfig.DEBUG_OPEN, false)) {
                     String cache = getCache(MD5.encode(name));
-                    if (JSUtils.isEmpty(cache)) {
+                    if (StringUtils.isEmpty(cache)) {
                         String netStr = OkHttpUtil.get(name);
                         if (!TextUtils.isEmpty(netStr)) {
                             setCache(604800, MD5.encode(name), netStr);

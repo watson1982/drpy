@@ -49,7 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jieba_android.JiebaSegmenter;
 import com.jieba_android.RequestCallback;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 /**
  * @author pj567
@@ -277,7 +277,7 @@ public class FastSearchActivity extends BaseActivity {
         mGridView.setVisibility(View.GONE);
         mGridViewFilter.setVisibility(View.VISIBLE);
         String key = spNames.get(spName);
-        if (JSUtils.isEmpty(key)) return;
+        if (StringUtils.isEmpty(key)) return;
 
         if (Objects.equals(searchFilterKey, key)) return;
         searchFilterKey = key;

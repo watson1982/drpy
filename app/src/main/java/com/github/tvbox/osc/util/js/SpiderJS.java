@@ -7,9 +7,10 @@ import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.MD5;
 
-import com.quickjs.android.JSArray;
-import com.quickjs.android.JSObject;
-import com.quickjs.android.JSUtils;
+
+import com.github.tvbox.osc.util.StringUtils;
+import com.whl.quickjs.wrapper.JSArray;
+import com.whl.quickjs.wrapper.JSObject;
 
 import org.json.JSONArray;
 
@@ -55,7 +56,7 @@ public class SpiderJS extends Spider {
                     jsObject = (JSObject) ctx.getProperty(globalThis, moduleKey);
                     //jsObject.getJSFunction("init").call(ext);
                     ext = FileUtils.loadModule(ext);
-                    jsObject.getJSFunction("init").call(JSUtils.isJsonType(ext)?ctx.parse(ext):cleanCommons(ext));
+                    jsObject.getJSFunction("init").call(StringUtils.isJsonType(ext)?ctx.parse(ext):ext);
                     return null;
                 });
             } catch (Throwable throwable) {
@@ -64,19 +65,16 @@ public class SpiderJS extends Spider {
         }
     }
 
-    private String cleanCommons(String content) {
-        //content = content.replaceAll("//.+\\r\\n", "");
-        return pattern.matcher(content).replaceAll("");
-    }
-
-    private String postFunc(String func, Object... args) {
+    private <T> T postFunc(String func, Object... args) {
         checkLoaderJS();
-        if (jsObject != null) {
-            try {
-                return jsThread.post((ctx, globalThis) -> (String) jsObject.getJSFunction(func).call(args));
-            } catch (Throwable throwable) {
-                LOG.e(throwable);
+        try {
+            if (jsObject != null) {
+
+                return jsThread.post((ctx, globalThis) -> (T) jsObject.getJSFunction(func).call(args));
+
             }
+        } catch (Throwable throwable) {
+            LOG.e(throwable);
         }
         return null;
     }
@@ -156,7 +154,8 @@ public class SpiderJS extends Spider {
                             o.setProperty(s, params.get(s));
                         }
                     }
-                    JSONArray opt = new JSONArray(((JSArray) jsObject.getJSFunction("proxy").call(new Object[]{o})).stringify());
+                    JSONArray opt = ((JSArray) jsObject.getJSFunction("proxy").call(new Object[]{o})).toJSONArray();
+                    //JSONArray opt = new JSONArray(((JSArray) jsObject.getJSFunction("proxy").call(new Object[]{o})).stringify());
                     Object[] result = new Object[3];
                     result[0] = opt.opt(0);
                     result[1] = opt.opt(1);
@@ -185,4 +184,13 @@ public class SpiderJS extends Spider {
         }
     }
 
+    @Override
+    public boolean manualVideoCheck() {
+        return Boolean.TRUE.equals(postFunc("sniffer"));
+    }
+
+    @Override
+    public boolean isVideoFormat(String url) {
+        return Boolean.TRUE.equals(postFunc("isVideo", url));
+    }
 }

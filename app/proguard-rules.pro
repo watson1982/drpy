@@ -3,14 +3,15 @@
 # 对于一些基本指令的添加
 #
 #############################################
--optimizationpasses 5
--dontusemixedcaseclassnames
--dontskipnonpubliclibraryclasses
--dontskipnonpubliclibraryclassmembers
--dontpreverify
--verbose
--printmapping proguardMapping.txt
--optimizations !code/simplification/cast,!field/*,!class/merging/*
+-optimizationpasses 5                                       #指定代码压缩级别
+-dontusemixedcaseclassnames                                 #混淆时不会产生形形色色的类名
+-dontskipnonpubliclibraryclasses                            #指定不忽略非公共类库
+-dontpreverify                                              #不预校验，如果需要预校验，是-dontoptimize
+-ignorewarnings                                             #屏蔽警告
+-verbose                                                    #混淆时记录日志
+
+#-printmapping proguardMapping.txt
+-optimizations !code/simplification/cast,!field/*,!class/merging/*    #优化
 -keepattributes *Annotation*,InnerClasses
 -keepattributes EnclosingMethod, InnerClasses
 -keepattributes *Annotation*
@@ -23,10 +24,10 @@
 -packageobfuscationdictionary dictoO0.txt
 
 # 重新包装所有重命名的包并放在给定的单一包中
--flattenpackagehierarchy androidx.base
+-flattenpackagehierarchy
 
 # 将包里的类混淆成n个再重新打包到一个统一的package中  会覆盖flattenpackagehierarchy选项
--repackageclasses androidx.base
+-repackageclasses
 
 # 把混淆类中的方法名也混淆了
 -useuniqueclassmembernames
@@ -46,7 +47,6 @@
 -keep public class * extends android.app.backup.BackupAgentHelper
 -keep public class * extends android.preference.Preference
 -keep public class * extends android.view.View
--keep public class com.android.vending.licensing.ILicensingService
 
 # 保留support下的所有类及其内部类
 -keep class android.support.** {*;}
@@ -62,8 +62,6 @@
 -keep class androidx.** { *; }
 -keep interface androidx.** { *; }
 #-keep public class * extends androidx.**
-
--keep class org.xmlpull.v1.** {*;}
 
 # 保留R下面的资源
 -keep class **.R$* {*;}
@@ -127,6 +125,7 @@
     void *(**On*Event);
     void *(**On*Listener);
 }
+
 #xwalk
 -keep class org.xwalk.core.** { *; }
 -keep class org.crosswalk.engine.** { *; }
@@ -190,6 +189,7 @@
 -dontwarn tv.danmaku.ijk.**
 
 # ExoPlayer
+-keep class org.xmlpull.v1.** { *; }
 -keep class com.google.android.exoplayer2.** { *; }
 -dontwarn com.google.android.exoplayer2.**
 
@@ -220,7 +220,10 @@
 # magnet：解决模拟器推送 磁力链接 闪退
 -keep class com.xunlei.downloadlib.** {*;}
 # quickjs引擎
--keep class com.quickjs.android.** {*;}
+-keep class com.whl.quickjs.** {*;}
+#-keep class com.quickjs.android.** {*;}
+# jsoup
+-keep class org.jsoup.** {*;}
 
 # support python
 -keep public class com.undcover.freedom.pyramid.** { *; }

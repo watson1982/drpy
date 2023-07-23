@@ -1,6 +1,6 @@
 package com.github.tvbox.osc.bean;
 
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -134,13 +134,13 @@ public class AbsJson implements Serializable {
                 List<Movie.Video.UrlBean.UrlInfo> infoList = new ArrayList<>();
                 for (int i = 0; i < playUrls.length; i++) {
                     Movie.Video.UrlBean.UrlInfo urlInfo = new Movie.Video.UrlBean.UrlInfo();
-                    if(JSUtils.isEmpty(playUrls[i])){
+                    if(StringUtils.isEmpty(playUrls[i])){
                         continue;
                     }
                     if(i > playFlags.length){
                         urlInfo.flag = "线路" + i;
                     } else {
-                        urlInfo.flag = JSUtils.isEmpty(playFlags[i]) ? "线路" + i : playFlags[i];
+                        urlInfo.flag = StringUtils.isEmpty(playFlags[i]) ? "线路" + i : playFlags[i];
                     }
                     urlInfo.urls = playUrls[i];
                     infoList.add(urlInfo);

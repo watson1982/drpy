@@ -24,7 +24,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 import com.jieba_android.JiebaSegmenter;
-import com.quickjs.android.QuickJSLoader;
+
+import com.whl.quickjs.android.QuickJSLoader;
 
 import me.jessyan.autosize.AutoSizeConfig;
 import me.jessyan.autosize.unit.Subunits;

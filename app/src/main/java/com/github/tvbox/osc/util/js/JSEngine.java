@@ -5,9 +5,9 @@ import android.os.HandlerThread;
 
 import com.github.tvbox.osc.util.FileUtils;
 import com.google.android.exoplayer2.util.UriUtil;
-import com.quickjs.android.JSModule;
-import com.quickjs.android.JSObject;
-import com.quickjs.android.QuickJSContext;
+import com.whl.quickjs.wrapper.JSModule;
+import com.whl.quickjs.wrapper.JSObject;
+import com.whl.quickjs.wrapper.QuickJSContext;
 
 import java.util.concurrent.ConcurrentHashMap;
 

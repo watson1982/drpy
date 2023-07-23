@@ -17,7 +17,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 
 import org.greenrobot.eventbus.EventBus;
@@ -310,7 +310,7 @@ public class RemoteServer extends NanoHTTPD {
             if(isPreflightRequest(session)){
                 return responseCORS(session);
             }
-            if (!JSUtils.isEmpty(session.getUri())) {
+            if (!StringUtils.isEmpty(session.getUri())) {
                 String fileName = session.getUri().trim();
                 if (fileName.indexOf('?') >= 0) {
                     fileName = fileName.substring(0, fileName.indexOf('?'));
@@ -507,7 +507,7 @@ public class RemoteServer extends NanoHTTPD {
         JsonObject info = new JsonObject();
         info.addProperty("remote", getServerAddress().replace("http://", "clan://"));
         info.addProperty("del", 0);
-        if (JSUtils.isEmpty(path)) {
+        if (StringUtils.isEmpty(path)) {
             info.addProperty("parent", ".");
         } else {
             info.addProperty("parent", file.getParentFile().getAbsolutePath().replace(root + "/", "").replace(root, ""));

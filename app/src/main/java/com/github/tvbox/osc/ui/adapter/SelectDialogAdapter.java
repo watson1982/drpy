@@ -54,7 +54,7 @@ public class SelectDialogAdapter<T> extends ListAdapter<T, SelectDialogAdapter.S
 
     private int select = 0;
 
-    private SelectDialogInterface dialogInterface = null;
+    private SelectDialogInterface dialogInterface;
 
     public SelectDialogAdapter(SelectDialogInterface dialogInterface, DiffUtil.ItemCallback diffCallback) {
         this(dialogInterface, diffCallback, false);

@@ -12,20 +12,19 @@ import com.github.tvbox.osc.util.OkGoHelper;
 import com.google.gson.Gson;
 import com.lzy.okgo.OkGo;
 
-
-import com.quickjs.android.JSArray;
-import com.quickjs.android.JSCallFunction;
-import com.quickjs.android.JSMethod;
-import com.quickjs.android.JSObject;
-import com.quickjs.android.JSUtils;
-import com.quickjs.android.QuickJSContext;
-
+import com.github.tvbox.osc.util.StringUtils;
+import com.whl.quickjs.wrapper.JSArray;
+import com.whl.quickjs.wrapper.JSCallFunction;
+import com.whl.quickjs.wrapper.JSMethod;
+import com.whl.quickjs.wrapper.JSObject;
+import com.whl.quickjs.wrapper.QuickJSContext;
 
 import org.json.JSONObject;
 
 import java.lang.reflect.Method;
 import java.util.Iterator;
-import java.util.Set;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
@@ -157,7 +156,7 @@ public class JSThread {
                 }
             });
 
-            /*if (JSUtils.isNotEmpty(an.alias())) {
+            /*if (StringUtils.isNotEmpty(an.alias())) {
                 getJsContext().evaluate("var " + an.alias() + " = " + functionName + ";\n");
             }*/
         }
@@ -262,8 +261,8 @@ public class JSThread {
     @JSMethod
     public Object req(String url, Object o2) {
         try {
-            //JSONObject opt = ((JSObject) o2).toJSONObject();
-            JSONObject opt = new JSONObject(jsContext.stringify((JSObject) o2));
+            JSONObject opt = ((JSObject) o2).toJSONObject();
+            //JSONObject opt = new JSONObject(jsContext.stringify((JSObject) o2));
             Headers.Builder headerBuilder = new Headers.Builder();
             JSONObject optHeader = opt.optJSONObject("headers");
             if (optHeader != null) {
@@ -279,7 +278,7 @@ public class JSThread {
             requestBuilder.tag("js_okhttp_tag");
             Request request;
             String contentType = null;
-            if (!JSUtils.isEmpty(headers.get("content-type"))) {
+            if (!StringUtils.isEmpty(headers.get("content-type"))) {
                 contentType = headers.get("Content-Type");
             }
             String method = opt.optString("method").toLowerCase();
@@ -291,12 +290,12 @@ public class JSThread {
             if (method.equals("post")) {
                 RequestBody body = null;
                 String data = opt.optString("data", "").trim();
-                if (!JSUtils.isEmpty(data)) {
+                if (!StringUtils.isEmpty(data)) {
                     body = RequestBody.create(MediaType.parse("application/json"), data);
                 }
                 if (body == null) {
                     String dataBody = opt.optString("body", "").trim();
-                    if (!JSUtils.isEmpty(dataBody) && contentType != null) {
+                    if (!StringUtils.isEmpty(dataBody) && contentType != null) {
                         body = RequestBody.create(MediaType.parse(contentType), opt.optString("body", ""));
                     }
                 }
@@ -319,11 +318,23 @@ public class JSThread {
             }
             Response response = builder.build().newCall(request).execute();
             JSObject jsObject = jsContext.createNewJSObject();
-            Set<String> resHeaders = response.headers().names();
             JSObject resHeader = jsContext.createNewJSObject();
-            for (String header : resHeaders) {
-                resHeader.setProperty(header, response.header(header));
+
+            for (Map.Entry<String, List<String>> entry : response.headers().toMultimap().entrySet()) {
+                if (entry.getValue().size() == 1) {
+                    resHeader.setProperty(entry.getKey(), entry.getValue().get(0));
+                }
+                if (entry.getValue().size() >= 2) {
+                    JSArray array = jsContext.createNewJSArray();
+                    List<String> items = entry.getValue();
+                    if (items == null || items.isEmpty()) return array;
+                    for (int i = 0; i < items.size(); i++) {
+                        array.set(items.get(i), i);
+                    }
+                    resHeader.setProperty(entry.getKey(), array);
+                };
             }
+
             jsObject.setProperty("headers", resHeader);
             jsObject.setProperty("code", response.code());
 

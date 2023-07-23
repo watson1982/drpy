@@ -37,7 +37,7 @@ import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
 
 import com.github.tvbox.osc.util.TxtSubscribe;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 import org.json.JSONObject;
 
@@ -48,7 +48,6 @@ import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -134,7 +133,7 @@ public class ApiConfig {
     public void loadConfig(boolean useCache, LoadConfigCallback callback, Activity activity) {
         // Embedded Source : Update in Strings.xml if required
         String apiUrl = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
-        if (JSUtils.isEmpty(apiUrl)) {
+        if (StringUtils.isEmpty(apiUrl)) {
             callback.error("-1");
             return;
         }
@@ -232,7 +231,7 @@ public class ApiConfig {
         String md5 = urls.length > 1 ? urls[1].trim() : "";
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/csp.jar");
 
-        if (!JSUtils.isEmpty(md5) || useCache) {
+        if (!StringUtils.isEmpty(md5) || useCache) {
             if (cache.exists() && (useCache || MD5.getFileMd5(cache).equalsIgnoreCase(md5))) {
                 if (jarLoader.load(cache.getAbsolutePath())) {
                     callback.success();
@@ -405,7 +404,7 @@ public class ApiConfig {
 
                 //clan
                 String extUrl = Uri.parse(url).getQueryParameter("ext");
-                if (extUrl != null && !JSUtils.isEmpty(extUrl)) {
+                if (extUrl != null && !StringUtils.isEmpty(extUrl)) {
                     String extUrlFix;
                     if(extUrl.startsWith("http") || extUrl.startsWith("clan://")){
                         extUrlFix = extUrl;
@@ -555,7 +554,7 @@ public class ApiConfig {
         }
     }
     private void putLiveHistory(String url) {
-        if (!JSUtils.isEmpty(url)) {
+        if (!StringUtils.isEmpty(url)) {
             ArrayList<String> liveHistory = Hawk.get(HawkConfig.LIVE_HISTORY, new ArrayList<String>());
             if (!liveHistory.contains(url))
                 liveHistory.add(0, url);
@@ -566,7 +565,7 @@ public class ApiConfig {
     }
 
     public static void putEPGHistory(String url) {
-        if (!JSUtils.isEmpty(url)) {
+        if (!StringUtils.isEmpty(url)) {
             ArrayList<String> epgHistory = Hawk.get(HawkConfig.EPG_HISTORY, new ArrayList<String>());
             if (!epgHistory.contains(url))
                 epgHistory.add(0, url);

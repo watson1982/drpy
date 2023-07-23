@@ -36,6 +36,7 @@ public class HawkConfig {
     public static final String LIVE_CONNECT_TIMEOUT = "live_connect_timeout";
     public static final String LIVE_SHOW_NET_SPEED = "live_show_net_speed";
     public static final String LIVE_SHOW_TIME = "live_show_time";
+    public static final String LIVE_SKIP_PASSWORD = "live_skip_password";
     public static final String HOME_SHOW_SOURCE = "show_source";
     public static final String HOME_LOCALE = "language"; // 0 中文 1 英文
     public static final String PIC_IN_PIC = "pic_in_pic"; // true = on, false = off
@@ -52,10 +53,7 @@ public class HawkConfig {
     public static final String API_MAP = "api_map";
     public static final String API_NAME_HISTORY = "api_name_history";
     public static final String API_NAME = "api_name";
-    public static final String STORE_API = "store_api";
-    public static final String STORE_API_NAME = "store_api_name";
-    public static final String STORE_API_NAME_HISTORY = "store_api_name_history";
-    public static final String STORE_API_MAP = "store_api_map";
+
 
     public static boolean isDebug(){
         return Hawk.get(DEBUG_OPEN, false);

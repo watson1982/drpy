@@ -25,7 +25,6 @@ import com.github.tvbox.osc.ui.adapter.SelectDialogAdapter;
 import com.github.tvbox.osc.ui.dialog.AboutDialog;
 import com.github.tvbox.osc.ui.dialog.ApiDialog;
 import com.github.tvbox.osc.ui.dialog.BackupDialog;
-import com.github.tvbox.osc.ui.dialog.DcDialog;
 import com.github.tvbox.osc.ui.dialog.SelectDialog;
 import com.github.tvbox.osc.ui.dialog.XWalkInitDialog;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
@@ -768,33 +767,6 @@ public class ModelSettingFragment extends BaseLazyFragment {
                 findViewById(R.id.llDebug).setVisibility(View.VISIBLE);
             }
         };
-
-        findViewById(R.id.llStoreApi).setOnClickListener( v -> {
-            FastClickCheckUtil.check(v);
-            DcDialog storeApiDialog = new DcDialog(mActivity);
-            EventBus.getDefault().register(storeApiDialog);
-            storeApiDialog.setOnListener(name -> {
-                Hawk.put(HawkConfig.STORE_API_NAME, name);
-            });
-            storeApiDialog.setOnDismissListener(dialog -> {
-                EventBus.getDefault().unregister(dialog);
-            });
-            storeApiDialog.show();
-        });
-
-        findViewById(R.id.tvStoreApi).setOnClickListener( v -> {
-            FastClickCheckUtil.check(v);
-            DcDialog storeApiDialog = new DcDialog(mActivity);
-            EventBus.getDefault().register(storeApiDialog);
-            storeApiDialog.setOnListener(name -> {
-                Hawk.put(HawkConfig.STORE_API_NAME, name);
-            });
-            storeApiDialog.setOnDismissListener(dialog -> {
-                EventBus.getDefault().unregister(dialog);
-            });
-            storeApiDialog.show();
-        });
-
 
     }
 

@@ -92,7 +92,7 @@ import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.Response;
 import com.obsez.android.lib.filechooser.ChooserDialog;
 import com.orhanobut.hawk.Hawk;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.jetbrains.annotations.NotNull;
@@ -431,7 +431,7 @@ public class PlayActivity extends BaseActivity {
 
             @Override
             public String getDisplay(TrackInfoBean val) {
-                return val.name + (JSUtils.isEmpty(val.language)? "": " " + val.language);
+                return val.name + (StringUtils.isEmpty(val.language)? "": " " + val.language);
             }
         }, new DiffUtil.ItemCallback<TrackInfoBean>() {
             @Override
@@ -498,7 +498,7 @@ public class PlayActivity extends BaseActivity {
                 String name = val.name.replace("AUDIO,", "");
                 name = name.replace("N/A,", "");
                 name = name.replace(" ", "");
-                return name + (JSUtils.isEmpty(val.language)? "": " " + val.language);
+                return name + (StringUtils.isEmpty(val.language)? "": " " + val.language);
             }
         }, new DiffUtil.ItemCallback<TrackInfoBean>() {
             @Override
@@ -696,7 +696,7 @@ public class PlayActivity extends BaseActivity {
 
                             }
                         }
-                        //if(JSUtils.isEmpty(webUserAgent)){
+                        //if(StringUtils.isEmpty(webUserAgent)){
                         //    webUserAgent = UA.random();
                         //}
                         if (parse || jx) {
@@ -1135,7 +1135,7 @@ public class PlayActivity extends BaseActivity {
                     }
                     if(reqHeaders.size()>0)webHeaderMap = reqHeaders;
                 }
-                //if(JSUtils.isEmpty(webUserAgent)){
+                //if(StringUtils.isEmpty(webUserAgent)){
                 //    webUserAgent = UA.random();
                 //}
             } catch (Throwable e) {
@@ -1283,7 +1283,7 @@ public class PlayActivity extends BaseActivity {
                             if (rs.has("ua")) {
                                 webUserAgent = rs.optString("ua").trim();
                             }
-                            //if(JSUtils.isEmpty(webUserAgent)){
+                            //if(StringUtils.isEmpty(webUserAgent)){
                             //    webUserAgent = UA.random();
                             //}
                             runOnUiThread(new Runnable() {
@@ -1514,9 +1514,7 @@ public class PlayActivity extends BaseActivity {
         settings.setDomStorageEnabled(true);
         settings.setJavaScriptEnabled(true);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            settings.setMediaPlaybackRequiresUserGesture(false);
-        }
+        settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setBlockNetworkImage(!Hawk.get(HawkConfig.DEBUG_OPEN, false));
         settings.setLoadsImagesAutomatically(false);
         settings.setUseWideViewPort(true);
@@ -1704,9 +1702,7 @@ public class PlayActivity extends BaseActivity {
 
         settings.setBlockNetworkImage(!Hawk.get(HawkConfig.DEBUG_OPEN, false));
         settings.setLoadsImagesAutomatically(false);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            settings.setMediaPlaybackRequiresUserGesture(false);
-        }
+        settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setUseWideViewPort(true);
         settings.setDomStorageEnabled(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);

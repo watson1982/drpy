@@ -30,6 +30,7 @@ def versionCodeNew = getVersionCode()
 def versionNameNew = getVersionName()
 android {
     compileSdkVersion rootProject.ext.compileSdkVersion
+    flavorDimensions "abi"
 
     defaultConfig {
         applicationId 'com.github.tvbox.drpy'
@@ -45,24 +46,25 @@ android {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
             }
         }
-
-        ndk {
-            //abiFilters 'arm64-v8a'
-            abiFilters "armeabi-v7a"
-        }
-
     }
-
+    productFlavors {
+        armeabi_v7a {
+            dimension "abi"
+            //noinspection ChromeOsAbiSupport
+            ndk { abiFilters "armeabi-v7a" }
+        }
+        arm64_v8a {
+            dimension "abi"
+            //noinspection ChromeOsAbiSupport
+            ndk { abiFilters "arm64-v8a" }
+        }
+        quan {
+            dimension "abi"
+            //noinspection ChromeOsAbiSupport
+            ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
+        }
+    }
     packagingOptions {
-        exclude 'META-INF/androidx.localbroadcastmanager_localbroadcastmanager.version'
-        exclude 'META-INF/androidx.customview_customview.version'
-        exclude 'META-INF/androidx.legacy_legacy-support-core-ui.version'
-        exclude 'META-INF/androidx.legacy_legacy-support-core-utils.version'
-        exclude 'META-INF/androidx.slidingpanelayout_slidingpanelayout.version'
-        exclude 'META-INF/androidx.*.version'
-        exclude 'META-INF/proguard/androidx-annotations.pro'
-        exclude 'META-INF/DEPENDENCIES'
-        exclude 'META-INF/rxjava.properties'
         exclude 'META-INF/beans.xml'
     }
 
@@ -79,12 +81,10 @@ android {
     }
 
     buildTypes {
-
         debug {
             signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             minifyEnabled false
-
         }
         release {
             signingConfig signingConfigs.release
@@ -92,15 +92,20 @@ android {
             minifyEnabled true
             shrinkResources true
             zipAlignEnabled true
-
         }
     }
 
     applicationVariants.all { variant ->
         variant.outputs.all {
             def type = variant.buildType.name
+            def abi = "全包"
+            if(variant.productFlavors[0].name == "armeabi_v7a"){
+                abi = "32位"
+            } else if(variant.productFlavors[0].name == "arm64_v8a"){
+                abi = "64位"
+            }
             def fileName = appName + "_V" + versionNameNew + "_C" + versionCodeNew +
-                    "_" +  type + ".apk"
+                    "_" + abi + "_" + type + ".apk"
             outputFileName = fileName
         }
     }
@@ -129,7 +134,7 @@ android {
 }
 
 dependencies {
-    api fileTree(include: ['*.jar'], dir: 'libs')
+    api fileTree(include: ['*.jar', '*.aar'], dir: 'libs')
     // for WebDAV
     implementation('com.github.thegrizzlylabs:sardine-android:0.5') {
         exclude group: 'com.squareup.okhttp3'
@@ -184,7 +189,7 @@ dependencies {
     implementation 'com.owen:tv-recyclerview:3.0.0'
 
     implementation 'com.github.getActivity:XXPermissions:13.6'
-    api 'org.jsoup:jsoup:1.15.4'
+    implementation 'org.jsoup:jsoup:1.15.4'
     //implementation "cn.wanghaomiao:JsoupXpath:2.5.0"
     implementation 'com.github.hedzr:android-file-chooser:v1.2.0-final'
     implementation 'commons-io:commons-io:2.11.0'
@@ -196,6 +201,7 @@ dependencies {
         }
     }
 
+    //implementation 'wang.harlon.quickjs:wrapper-android:0.20.2'
     //implementation 'com.annimon:stream:1.2.2'
     //奔溃信息提示
     //implementation("com.simple:spiderman:1.1.6") {

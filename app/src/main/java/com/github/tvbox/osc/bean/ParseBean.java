@@ -3,7 +3,7 @@ package com.github.tvbox.osc.bean;
 import android.util.Base64;
 
 import com.github.tvbox.osc.util.DefaultConfig;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 /**
  * @author pj567
@@ -60,7 +60,7 @@ public class ParseBean {
     }
 
     public String mixUrl() {
-        if (!JSUtils.isEmpty(ext)) {
+        if (!StringUtils.isEmpty(ext)) {
             int idx = url.indexOf("?");
             if (idx > 0) {
                 return url.substring(0, idx + 1) + "cat_ext=" + Base64.encodeToString(ext.getBytes(), Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP) + "&" + url.substring(idx + 1);

@@ -132,7 +132,8 @@
     <string name="vod_sub_delay">Delay</string>
     <string name="vod_sub_search">Search</string>
     <string name="vod_sub_off">Subtitle Off</string>
-
+    <string name="vod_remaining_time">Remaining Time</string>
+    <string name="vod_ends_at">Ends at</string>
 
     <string name="settings">settings</string>
     <string name="Clear_Cache">ClearCache</string>

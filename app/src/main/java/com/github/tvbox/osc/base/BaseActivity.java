@@ -90,7 +90,7 @@ public abstract class BaseActivity extends AppCompatActivity implements CustomAd
     @Override
     protected void onResume() {
         super.onResume();
-        hideSystemUI();
+        hideSystemUI(false);
         changeWallpaper(false);
     }
 
@@ -107,19 +107,25 @@ public abstract class BaseActivity extends AppCompatActivity implements CustomAd
         return 0;
     }
 
-    public void hideSystemUI() {
+    public void hideSystemUI(boolean shownavbar) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             int uiVisibility = getWindow().getDecorView().getSystemUiVisibility();
             uiVisibility |= View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
-            uiVisibility |= View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN;
+            uiVisibility |= View.SYSTEM_UI_FLAG_LOW_PROFILE;
             uiVisibility |= View.SYSTEM_UI_FLAG_FULLSCREEN;
+            uiVisibility |= View.SYSTEM_UI_FLAG_IMMERSIVE;
             uiVisibility |= View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY;
-            uiVisibility |= View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
-            uiVisibility |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+            if (!shownavbar) {
+                uiVisibility |= View.SYSTEM_UI_FLAG_HIDE_NAVIGATION;
+                uiVisibility |= View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION;
+            }
             getWindow().getDecorView().setSystemUiVisibility(uiVisibility);
             // set content behind navigation bar
 //        getWindow().setFlags(WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS, WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS);
         }
+    }
+    public boolean supportsTouch() {
+        return getPackageManager().hasSystemFeature("android.hardware.touchscreen");
     }
 
     @Override

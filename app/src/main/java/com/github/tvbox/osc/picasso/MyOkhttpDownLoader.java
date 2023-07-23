@@ -21,7 +21,7 @@ import androidx.annotation.VisibleForTesting;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 import com.squareup.picasso.Downloader;
 
 import java.io.IOException;
@@ -124,17 +124,17 @@ public final class MyOkhttpDownLoader implements Downloader {
         }
         Request.Builder mRequestBuilder = new Request.Builder().url(url);
 
-        if (!JSUtils.isEmpty(cookie)) {
+        if (!StringUtils.isEmpty(cookie)) {
             mRequestBuilder.addHeader("cookie", cookieUrl[1]);
         }
-        if (!JSUtils.isEmpty(ua)) {
-            if (JSUtils.isEmpty(refer)) {
+        if (!StringUtils.isEmpty(ua)) {
+            if (StringUtils.isEmpty(refer)) {
                 mRequestBuilder.addHeader("user-agent", ua);
             } else {
                 mRequestBuilder.addHeader("user-agent", ua).addHeader("referer", refer);
             }
         } else {
-            if (!JSUtils.isEmpty(refer)) {
+            if (!StringUtils.isEmpty(refer)) {
                 mRequestBuilder.addHeader("referer", refer);
             }
         }

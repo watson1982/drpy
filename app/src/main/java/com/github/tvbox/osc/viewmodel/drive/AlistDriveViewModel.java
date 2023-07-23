@@ -1,7 +1,5 @@
 package com.github.tvbox.osc.viewmodel.drive;
 
-import android.text.TextUtils;
-
 import com.github.tvbox.osc.bean.DriveFolderFile;
 import com.github.tvbox.osc.util.UA;
 import com.github.tvbox.osc.util.urlhttp.OkHttpUtil;
@@ -77,17 +75,16 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                             String result = OkHttpUtil.get(webLink + "/api/public/settings");
                             JSONObject opt = new JSONObject(result);
                             Object obj = new JSONTokener(opt.optString("data")).nextValue();
-                            if(obj instanceof JSONObject){
+                            if (obj instanceof JSONObject) {
                                 currentDrive.version = 3;
-                            } else if (obj instanceof JSONArray){
+                            } else if (obj instanceof JSONArray) {
                                 currentDrive.version = 2;
                             }
                         }
 
-                        if(currentDrive.version == 2){
+                        if (currentDrive.version == 2) {
                             PostRequest<String> request = OkGo.<String>post(webLink + "/api/public/path").tag("drive");
                             JSONObject requestBody = new JSONObject();
-
                             requestBody.put("path", targetPath.isEmpty() ? "/" : targetPath);
                             requestBody.put("password", currentDrive.getConfig().get("password").getAsString());
                             requestBody.put("page_num", 1);
@@ -97,14 +94,8 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                             request.execute(new AbsCallback<String>() {
 
                                 @Override
-                                public String convertResponse(okhttp3.Response response){
-                                    try {
-                                        return response.body().string();
-                                    } catch (Exception ex) {
-                                        if (callback != null)
-                                            callback.fail("无法访问，请注意地址格式");
-                                    }
-                                    return "";
+                                public String convertResponse(okhttp3.Response response) throws Throwable {
+                                    return response.body().string();
                                 }
 
                                 @Override
@@ -137,7 +128,7 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                                             }
                                         }
                                         sortData(items);
-                                        DriveFolderFile backItem = new DriveFolderFile(null, null,0, false, null, null);
+                                        DriveFolderFile backItem = new DriveFolderFile(null, null, 0, false, null, null);
                                         backItem.parentFolder = backItem;
                                         items.add(0, backItem);
                                         currentDriveNote.setChildren(items);
@@ -149,7 +140,7 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                                     }
                                 }
                             });
-                        } else if(currentDrive.version == 3) {
+                        } else if (currentDrive.version == 3) {
                             PostRequest<String> request = OkGo.<String>post(webLink + "/api/fs/list").tag("drive");
                             JSONObject requestBody = new JSONObject();
                             requestBody.put("path", targetPath.isEmpty() ? "/" : targetPath);
@@ -163,14 +154,8 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                             request.execute(new AbsCallback<String>() {
 
                                 @Override
-                                public String convertResponse(okhttp3.Response response) {
-                                    try {
-                                        return response.body().string();
-                                    } catch (Exception ex) {
-                                        if (callback != null)
-                                            callback.fail("无法访问，请注意地址格式");
-                                    }
-                                    return "";
+                                public String convertResponse(okhttp3.Response response) throws Throwable {
+                                    return response.body().string();
                                 }
 
                                 @Override
@@ -234,7 +219,11 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
         String targetPath = targetFile.getAccessingPathStr() + targetFile.name;
         try {
             if (callback != null) {
-                callback.callback(URLDecoder.decode(webLink + "/d" + targetPath, "UTF-8"));
+                if (targetFile.fileUrl != null && !targetFile.fileUrl.isEmpty()) {
+                    callback.callback(targetFile.fileUrl);
+                } else {
+                    callback.callback(URLDecoder.decode(webLink + "/d" + targetPath, "UTF-8"));
+                }
             }
         } catch (UnsupportedEncodingException e) {
             e.printStackTrace();

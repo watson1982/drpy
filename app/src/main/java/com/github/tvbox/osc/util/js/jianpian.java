@@ -30,7 +30,7 @@ public class jianpian {
                 App.burl = replace;
                 App.getp2p().P2Pdoxstart(replace.getBytes("GBK"));
                 App.getp2p().P2Pdoxadd(replace.getBytes("GBK"));
-                return "http://" + LocalIPAddress.getIP(App.getInstance()) + ":" + P2PClass.port + "/" + URLEncoder.encode(Uri.parse(replace).getLastPathSegment(), "GBK");
+                return "http://127.0.0.1:" + P2PClass.port + "/" + URLEncoder.encode(Uri.parse(replace).getLastPathSegment(), "GBK");
             } catch (Exception e) {
                 return e.getLocalizedMessage();
             }

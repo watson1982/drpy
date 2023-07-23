@@ -44,7 +44,6 @@ public class EpgUtil {
                         epgHashMap.put(string,obj);
                     }
                 }
-                return;
             }
 
         } catch (IOException e) {

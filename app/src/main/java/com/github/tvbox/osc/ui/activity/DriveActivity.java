@@ -37,6 +37,7 @@ import com.github.tvbox.osc.viewmodel.drive.AbstractDriveViewModel;
 import com.github.tvbox.osc.viewmodel.drive.AlistDriveViewModel;
 import com.github.tvbox.osc.viewmodel.drive.LocalDriveViewModel;
 import com.github.tvbox.osc.viewmodel.drive.WebDAVDriveViewModel;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -46,7 +47,7 @@ import com.obsez.android.lib.filechooser.ChooserDialog;
 import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -390,6 +391,7 @@ public class DriveActivity extends BaseActivity {
     public void toggleDelMode() {
         delMode = !delMode;
         if (delMode) {
+            // takagen99: Added Theme Color
             this.btnRemoveServer.setColorFilter(ContextCompat.getColor(mContext, R.color.color_FF0057));
         } else {
             this.btnRemoveServer.setColorFilter(ContextCompat.getColor(mContext, R.color.color_FFFFFF));
@@ -477,7 +479,7 @@ public class DriveActivity extends BaseActivity {
                 });
             }
         });
-        if(JSUtils.isNotEmpty(path)) {
+        if(StringUtils.isNotEmpty(path)) {
             this.txtTitle.setText(path);
         }
     }

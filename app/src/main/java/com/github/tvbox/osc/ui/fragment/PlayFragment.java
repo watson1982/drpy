@@ -82,7 +82,7 @@ import com.lzy.okgo.model.HttpHeaders;
 import com.lzy.okgo.model.Response;
 import com.obsez.android.lib.filechooser.ChooserDialog;
 import com.orhanobut.hawk.Hawk;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.jetbrains.annotations.NotNull;
@@ -417,7 +417,7 @@ public class PlayFragment extends BaseLazyFragment {
 
             @Override
             public String getDisplay(TrackInfoBean val) {
-                return val.name + (JSUtils.isEmpty(val.language)? "" : " " + val.language);
+                return val.name + (StringUtils.isEmpty(val.language)? "" : " " + val.language);
             }
         }, new DiffUtil.ItemCallback<TrackInfoBean>() {
             @Override
@@ -487,7 +487,7 @@ public class PlayFragment extends BaseLazyFragment {
                 String name = val.name.replace("AUDIO,", "");
                 name = name.replace("N/A,", "");
                 name = name.replace(" ", "");
-                return name + (JSUtils.isEmpty(val.language)? "": " " + val.language);
+                return name + (StringUtils.isEmpty(val.language)? "": " " + val.language);
             }
         }, new DiffUtil.ItemCallback<TrackInfoBean>() {
             @Override
@@ -686,7 +686,7 @@ public class PlayFragment extends BaseLazyFragment {
 
                             }
                         }
-                        //if(JSUtils.isEmpty(webUserAgent)){
+                        //if(StringUtils.isEmpty(webUserAgent)){
                         //    webUserAgent = UA.random();
                         //}
                         if (parse || jx) {
@@ -890,6 +890,9 @@ public class PlayFragment extends BaseLazyFragment {
             CacheManager.delete(MD5.string2MD5(subtitleCacheKey), "");
         }
         if(vs.url.startsWith("tvbox-xg:")){
+            if(vs.url.startsWith("tvbox-xg://")){
+                vs.url = vs.url.replace("tvbox-xg://","tvbox-xg:");
+            }
             if (!TextUtils.isEmpty(vs.url.substring(9))) {
                 mController.showParse(false);
                 playUrl(jianpian.JPUrlDec(vs.url.substring(9)), null);
@@ -1017,7 +1020,7 @@ public class PlayFragment extends BaseLazyFragment {
             // 解析ext
             try {
                 HashMap<String, String> reqHeaders = new HashMap<>();
-                if(JSUtils.isNotEmpty(pb.getExt())) {
+                if(StringUtils.isNotEmpty(pb.getExt())) {
                     JSONObject jsonObject = new JSONObject(pb.getExt());
                     if (jsonObject.has("header")) {
                         JSONObject headerJson = jsonObject.optJSONObject("header");
@@ -1033,7 +1036,7 @@ public class PlayFragment extends BaseLazyFragment {
                         if (reqHeaders.size() > 0) webHeaderMap = reqHeaders;
                     }
                 }
-                //if(JSUtils.isEmpty(webUserAgent)){
+                //if(StringUtils.isEmpty(webUserAgent)){
                 //    webUserAgent = UA.random();
                 //}
             } catch (Throwable e) {
@@ -1181,7 +1184,7 @@ public class PlayFragment extends BaseLazyFragment {
                             if (rs.has("ua")) {
                                 webUserAgent = rs.optString("ua").trim();
                             }
-                            //if(JSUtils.isEmpty(webUserAgent)){
+                            //if(StringUtils.isEmpty(webUserAgent)){
                             //    webUserAgent = UA.random();
                             //}
                             requireActivity().runOnUiThread(new Runnable() {
@@ -1410,9 +1413,7 @@ public class PlayFragment extends BaseLazyFragment {
         settings.setDomStorageEnabled(true);
         settings.setJavaScriptEnabled(true);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            settings.setMediaPlaybackRequiresUserGesture(false);
-        }
+        settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setBlockNetworkImage(!Hawk.get(HawkConfig.DEBUG_OPEN, false));
         settings.setLoadsImagesAutomatically(false);
         settings.setUseWideViewPort(true);
@@ -1599,9 +1600,7 @@ public class PlayFragment extends BaseLazyFragment {
 
         settings.setBlockNetworkImage(!Hawk.get(HawkConfig.DEBUG_OPEN, false));
         settings.setLoadsImagesAutomatically(false);
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            settings.setMediaPlaybackRequiresUserGesture(false);
-        }
+        settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setUseWideViewPort(true);
         settings.setDomStorageEnabled(true);
         settings.setJavaScriptCanOpenWindowsAutomatically(true);

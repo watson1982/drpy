@@ -61,7 +61,7 @@ import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7GridLayoutManager;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
@@ -139,7 +139,7 @@ public class DetailActivity extends BaseActivity {
     private TvRecyclerView mSeriesGroupView;
     private List<Runnable> pauseRunnable = null;
     private String preFlag = "";
-    private List<List<VodInfo.VodSeries>> uu = new ArrayList<>();
+    private List<List<VodInfo.VodSeries>> uu;
     private int GroupCount;
     private int GroupIndex = 0;
     private String searchTitle = "";
@@ -418,8 +418,11 @@ public class DetailActivity extends BaseActivity {
                 if (vodInfo != null && vodInfo.seriesMap.get(vodInfo.playFlag).size() > 0) {
                     boolean reload = false;
                     if (vodInfo.playIndex != GroupIndex * GroupCount + position) {
-                        seriesAdapter.getData().get(vodInfo.playIndex % GroupCount).selected = false;
-                        seriesAdapter.notifyItemChanged(vodInfo.playIndex % GroupCount);
+                        for (int i = 0; i < seriesAdapter.getData().size(); i++){
+                            VodInfo.VodSeries Series = seriesAdapter.getData().get(i);
+                            Series.selected = false;
+                            seriesAdapter.notifyItemChanged(i);
+                        }
                         seriesAdapter.getData().get(position).selected = true;
                         seriesAdapter.notifyItemChanged(position);
                         vodInfo.playIndex = GroupIndex * GroupCount + position;
@@ -540,36 +543,41 @@ public class DetailActivity extends BaseActivity {
 
     private List<VodSeriesGroup> getSeriesGroupList() {
         List<VodSeriesGroup> arrayList = new ArrayList<>();
+        if(uu != null){
+            uu.clear();
+        } else {
+            uu = new ArrayList<>();
+        }
         try {
-            int size = vodInfo.seriesMap.get(vodInfo.playFlag).size();
+            List<VodInfo.VodSeries> vodSeries = vodInfo.seriesMap.get(vodInfo.playFlag);
+            int size = vodSeries.size();
             GroupCount = size > 2500.0d ? 300 : size > 1500.0d ? 200 : size > 1000.0d ? 150 : size > 500.0d ? 100 : size > 300.0d ? 50 : size > 100.0d ? 30 : 20;
-            GroupIndex = (int) Math.floor(vodInfo.playIndex / (GroupCount + 0.0));
+            GroupIndex = (int) Math.floor(vodInfo.playIndex / (GroupCount + 0.0f));
             if (GroupIndex < 0) {
                 GroupIndex = 0;
             }
             if (size > GroupCount) {
-                int start = getNum(vodInfo.seriesMap.get(vodInfo.playFlag).get(0).name);
-                int end = getNum(vodInfo.seriesMap.get(vodInfo.playFlag).get(size - 1).name);
+                /*int start = getNum(vodSeries.get(0).name);
+                int end = getNum(vodSeries.get(size - 1).name);
                 if (end == 1 && start > 1) {
                     this.vodInfo.reverse();
-                }
-                int GroupSize = (int) Math.ceil(size / (GroupCount + 0.0));
-                int i = 0;
-                while (i < GroupSize) {
+                    vodSeries = vodInfo.seriesMap.get(vodInfo.playFlag);
+                }*/
+                int GroupSize = (int) Math.ceil(size / (GroupCount + 0.0f));
+                for(int i = 0; i < GroupSize; i++){
                     mSeriesGroupView.setVisibility(View.VISIBLE);
                     int s = (i * GroupCount) + 1;
-                    i++;
-                    int e = i * GroupCount;
+                    int e = (i + 1) * GroupCount;
                     List<VodInfo.VodSeries> info = new ArrayList<>();
                     if (e < size) {
                         for (int j = s - 1; j < e; j++) {
-                            info.add(vodInfo.seriesMap.get(vodInfo.playFlag).get(j));
+                            info.add(vodSeries.get(j));
                         }
                         arrayList.add(new VodSeriesGroup(s + "-" + e));
                         //arrayList.add(s + "-" + e);
                     } else {
                         for (int j = s - 1; j < size; j++) {
-                            info.add(vodInfo.seriesMap.get(vodInfo.playFlag).get(j));
+                            info.add(vodSeries.get(j));
                         }
                         arrayList.add(new VodSeriesGroup(s + "-" + size));
                         //arrayList.add(s + "-" + size);
@@ -579,7 +587,7 @@ public class DetailActivity extends BaseActivity {
             } else {
                 arrayList.add(new VodSeriesGroup("1-" + size));
                 //arrayList.add("1-" + size);
-                uu.add(vodInfo.seriesMap.get(vodInfo.playFlag));
+                uu.add(vodSeries);
                 mSeriesGroupView.setVisibility(View.GONE);
             }
         } catch (Exception e) {
@@ -589,7 +597,7 @@ public class DetailActivity extends BaseActivity {
     }
 
     private void setTextShow(TextView view, String tag, String info) {
-        if (info == null || JSUtils.isEmpty(info.trim())) {
+        if (info == null || StringUtils.isEmpty(info.trim())) {
             view.setVisibility(View.GONE);
             return;
         }
@@ -754,6 +762,7 @@ public class DetailActivity extends BaseActivity {
                         mSeriesGroupView.scrollToPosition(mGroupIndex);
                     }
                     if (index != vodInfo.playIndex) {
+                        //seriesAdapter.setNewData(uu.get(GroupIndex));
                         seriesAdapter.getData().get(vodInfo.playIndex % GroupCount).selected = false;
                         seriesAdapter.notifyItemChanged(vodInfo.playIndex % GroupCount);
                         seriesAdapter.getData().get(index % GroupCount).selected = true;

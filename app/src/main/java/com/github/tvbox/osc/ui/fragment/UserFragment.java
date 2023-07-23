@@ -27,7 +27,7 @@ import com.github.tvbox.osc.ui.activity.SettingActivity;
 import com.github.tvbox.osc.ui.adapter.HomeHotVodAdapter;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
-import com.quickjs.android.JSUtils;
+import com.github.tvbox.osc.util.StringUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -165,7 +165,7 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
                     return false;
                 Movie.Video vod = ((Movie.Video) adapter.getItem(position));
                 // Additional Check if : Home Rec 0=豆瓣, 1=推荐, 2=历史
-                if ((vod != null && !JSUtils.isEmpty(vod.id)) && (Hawk.get(HawkConfig.HOME_REC, 0) == 2)) {
+                if ((vod != null && !StringUtils.isEmpty(vod.id)) && (Hawk.get(HawkConfig.HOME_REC, 0) == 2)) {
                     homeHotVodAdapter.remove(position);
                     VodInfo vodInfo = RoomDataManger.getVodInfo(vod.sourceKey, vod.id);
                     RoomDataManger.deleteVodRecord(vod.sourceKey, vodInfo);
