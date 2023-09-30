@@ -1,9 +1,13 @@
 package com.github.catvod.net;
 
+import org.conscrypt.Conscrypt;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.security.GeneralSecurityException;
+import java.security.Provider;
+import java.security.Security;
 import java.security.cert.X509Certificate;
 import java.util.LinkedList;
 import java.util.List;
@@ -54,8 +58,10 @@ public class SSLSocketFactoryCompat extends SSLSocketFactory {
 
     public SSLSocketFactoryCompat() {
         try {
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, new X509TrustManager[]{SSLSocketFactoryCompat.trustAllCert}, null);
+            Provider provider = Conscrypt.newProvider();
+            Security.insertProviderAt(provider, 1);
+            SSLContext sslContext = SSLContext.getInstance("TLS", provider);
+            sslContext.init(null, new X509TrustManager[]{trustAllCert}, null);
             defaultFactory = sslContext.getSocketFactory();
             HttpsURLConnection.setDefaultSSLSocketFactory(defaultFactory);
         } catch (GeneralSecurityException e) {

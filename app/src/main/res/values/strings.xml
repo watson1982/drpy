@@ -176,17 +176,4 @@
     <!-- Defines a way of appending an item to a list of items. For example appending "banana" to "apple, pear" to get "apple, pear, banana". Note: the command separator will appear between all consecutive list items, so do not use an equivalent of 'and'. [CHAR LIMIT=40] -->
     <string name="exo_item_list">%1$s，%2$s</string>
 
-    <string-array name="doh_name">
-        <item>System</item>
-        <item>Tencent</item>
-        <item>Alibaba</item>
-        <item>360</item>
-    </string-array>
-
-    <string-array name="doh_url">
-        <item />
-        <item>https://doh.pub/dns-query</item>
-        <item>https://dns.alidns.com/dns-query</item>
-        <item>https://doh.360.cn/dns-query</item>
-    </string-array>
 </resources>

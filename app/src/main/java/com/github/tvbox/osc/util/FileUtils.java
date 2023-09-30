@@ -8,7 +8,8 @@ import android.util.Base64;
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.server.ControlManager;
 
-import com.github.tvbox.osc.util.urlhttp.OkHttpUtil;
+import com.lzy.okgo.OkGo;
+import com.lzy.okgo.model.HttpHeaders;
 import com.orhanobut.hawk.Hawk;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -17,13 +18,17 @@ import org.json.JSONObject;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -48,7 +53,7 @@ public class FileUtils {
             }
             JsonObject asJsonObject = (new Gson().fromJson(code, JsonObject.class)).getAsJsonObject();
             if (((long) asJsonObject.get("expires").getAsInt()) > System.currentTimeMillis() / 1000) {
-                return Base64.encodeToString(asJsonObject.get("data").getAsString().getBytes(), Base64.URL_SAFE);
+                return new String(Base64.decode(asJsonObject.get("data").getAsString(), Base64.URL_SAFE));
             }
             recursiveDelete(open(name));
             return "";
@@ -56,44 +61,71 @@ public class FileUtils {
             return "";
         }
     }
+    public static byte[] getCacheByte(String name) {
+        try {
+            File file = open("B_" + name);
+            if (file.exists()) {
+                return readSimple(file);
+            }
+
+            return null;
+        } catch (Exception e4) {
+            return null;
+        }
+    }
 
     public static void setCache(int time, String name, String data) {
         try {
             JSONObject jSONObject = new JSONObject();
             jSONObject.put("expires", (int) (time + (System.currentTimeMillis() / 1000)));
-            jSONObject.put("data", new String(Base64.decode(data, Base64.URL_SAFE)));
+            jSONObject.put("data", Base64.encodeToString(data.getBytes(), Base64.URL_SAFE));
             writeSimple(jSONObject.toString().getBytes(), open(name));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    public static String loadJs(String name) {
+    public static void setCacheByte(String name, byte[] data) {
         try {
-            if (name.startsWith("http://") || name.startsWith("https://")) {
-                String cache = getCache(MD5.encode(name));
-                if (StringUtils.isEmpty(cache)) {
-                    String netStr = OkHttpUtil.get(name);
-                    if (!TextUtils.isEmpty(netStr)) {
-                        setCache(604800, MD5.encode(name), netStr);
-                    }
-                    return ControlManager.get().getAddress(true) + "/proxy?do=ext&txt=" + Base64.encodeToString(netStr.getBytes(), Base64.URL_SAFE);
-                }
-                return ControlManager.get().getAddress(true) + "/proxy?do=ext&txt=" + Base64.encodeToString(cache.getBytes(), Base64.URL_SAFE);
-                //return cache;
-            }
+            writeSimple(Base64.encode(data, Base64.URL_SAFE), open("B_" + name));
         } catch (Exception e) {
             e.printStackTrace();
-            return name;
         }
-        return name;
+    }
+    public static String get(String str) {
+        return get(str, null);
+    }
+
+    public static String get(String str, Map<String, String> headerMap) {
+        try {
+            HttpHeaders h = new HttpHeaders();
+            if (headerMap != null) {
+                for (String key : headerMap.keySet()) {
+                    h.put(key, headerMap.get(key));
+                }
+                return OkGo.<String>get(str).headers(h).execute().body().string();
+            } else {
+                return OkGo.<String>get(str).headers("User-Agent", str.startsWith("https://gitcode.net/") ? UA.random() : "okhttp/3.15").execute().body().string();
+            }
+
+        } catch (IOException e) {
+            return "";
+        }
     }
 
     private static final Pattern URLJOIN = Pattern.compile("^http.*\\.(js|txt|json|m3u)$", Pattern.MULTILINE | Pattern.CASE_INSENSITIVE);
 
     public static String loadModule(String name) {
         try {
-            if (name.contains("gbk.js")) {
+            if (name.contains("similarity.js")) {
+                name = "similarity.js";
+            } else if (name.contains("cat.js")) {
+                name = "cat.js";
+            } else if (name.contains("cheerio.min.js")) {
+                name = "cheerio.min.js";
+            } else if (name.contains("crypto-js.js")) {
+                name = "crypto-js.js";
+            } else if (name.contains("gbk.js")) {
                 name = "gbk.js";
             } else if (name.contains("模板.js")) {
                 name = "模板.js";
@@ -103,7 +135,7 @@ public class FileUtils {
                 if(!Hawk.get(HawkConfig.DEBUG_OPEN, false)) {
                     String cache = getCache(MD5.encode(name));
                     if (StringUtils.isEmpty(cache)) {
-                        String netStr = OkHttpUtil.get(name);
+                        String netStr = get(name);
                         if (!TextUtils.isEmpty(netStr)) {
                             setCache(604800, MD5.encode(name), netStr);
                         }
@@ -111,20 +143,20 @@ public class FileUtils {
                     }
                     return cache;
                 } else {
-                    return OkHttpUtil.get(name);
+                    return get(name);
                 }
             } else if (name.startsWith("assets://")) {
                 return getAsOpen(name.substring(9));
             } else if (isAsFile(name, "js/lib")) {
                 return getAsOpen("js/lib/" + name);
             } else if (name.startsWith("file://")) {
-                return OkHttpUtil.get(ControlManager.get().getAddress(true) + "file/" + name.replace("file:///", "").replace("file://", ""));
+                return get(ControlManager.get().getAddress(true) + "file/" + name.replace("file:///", "").replace("file://", ""));
             } else if (name.startsWith("clan://localhost/")) {
-                return OkHttpUtil.get(ControlManager.get().getAddress(true) + "file/" + name.replace("clan://localhost/", ""));
+                return get(ControlManager.get().getAddress(true) + "file/" + name.replace("clan://localhost/", ""));
             } else if (name.startsWith("clan://")) {
                 String substring = name.substring(7);
                 int indexOf = substring.indexOf(47);
-                return OkHttpUtil.get("http://" + substring.substring(0, indexOf) + "/file/" + substring.substring(indexOf + 1));
+                return get("http://" + substring.substring(0, indexOf) + "/file/" + substring.substring(indexOf + 1));
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -185,6 +217,30 @@ public class FileUtils {
         return null;
     }
 
+    public static String readFileToString(String path, String charsetName) {
+        // 定义返回结果
+        StringBuilder jsonString = new StringBuilder();
+
+        BufferedReader in = null;
+        try {
+            in = new BufferedReader(new InputStreamReader(new FileInputStream(path), charsetName));// 读取文件
+            String thisLine;
+            while ((thisLine = in.readLine()) != null) {
+                jsonString.append(thisLine);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (IOException el) {
+                }
+            }
+        }
+        // 返回拼接好的JSON String
+        return jsonString.toString();
+    }
     public static void copyFile(File source, File dest) throws IOException {
         try (InputStream is = new FileInputStream(source); OutputStream os = new FileOutputStream(dest)) {
             byte[] buffer = new byte[1024];
@@ -318,5 +374,19 @@ public class FileUtils {
             }
         }
         return dir.delete();
+    }
+
+    public static String getFileNameWithoutExt(String filePath){
+        if(TextUtils.isEmpty(filePath)) return "";
+        String fileName = filePath;
+        int p = fileName.lastIndexOf(File.separatorChar);
+        if(p != -1){
+            fileName = fileName.substring(p + 1);
+        }
+        p = fileName.indexOf('.');
+        if(p != -1){
+            fileName = fileName.substring(0, p);
+        }
+        return fileName;
     }
 }

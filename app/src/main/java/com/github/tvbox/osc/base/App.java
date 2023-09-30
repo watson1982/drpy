@@ -4,6 +4,7 @@ import android.app.Activity;
 
 import androidx.multidex.MultiDexApplication;
 
+import com.github.catvod.crawler.JsLoader;
 import com.github.tvbox.osc.callback.EmptyCallback;
 import com.github.tvbox.osc.callback.LoadingCallback;
 import com.github.tvbox.osc.data.AppDataManager;
@@ -13,7 +14,6 @@ import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.LocaleHelper;
 import com.github.tvbox.osc.util.OkGoHelper;
 import com.github.tvbox.osc.util.PlayerHelper;
-import com.github.tvbox.osc.util.js.JSEngine;
 import com.github.tvbox.osc.util.js.jianpian;
 
 import com.kingja.loadsir.core.LoadSir;
@@ -133,7 +133,7 @@ public class App extends MultiDexApplication {
     @Override
     public void onTerminate() {
         super.onTerminate();
-        JSEngine.getInstance().destroy();
+        JsLoader.stopAll();
         jianpian.finish();
     }
 

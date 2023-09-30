@@ -5,8 +5,8 @@ import com.github.tvbox.osc.base.App;
 
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.MD5;
-import com.github.tvbox.osc.util.js.SpiderJS;
 
+import com.github.tvbox.osc.util.js.JsSpider;
 import com.lzy.okgo.OkGo;
 
 import java.io.File;
@@ -21,15 +21,22 @@ import dalvik.system.DexClassLoader;
 import okhttp3.Response;
 
 public class JsLoader {
-    private ConcurrentHashMap<String, SpiderJS> spiders = new ConcurrentHashMap<>();
-    private ConcurrentHashMap<String, Class<?>> classs = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, Spider> spiders = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, Class<?>> classs = new ConcurrentHashMap<>();
 
-    public void load() {
-        spiders.clear();
-
-        classs.clear();
-
+    public static void load() {
+        stopAll();
     }
+
+    public static void stopAll() {
+        for (Spider spider : spiders.values()){
+            spider.destroy();
+            spider.cancelByTag();
+        }
+        spiders.clear();
+        classs.clear();
+    }
+
     private boolean loadClassLoader(String jar, String key) {
         boolean success = false;
         Class<?> classInit = null;
@@ -101,6 +108,7 @@ public class JsLoader {
     }
     private volatile String recentJarKey = "";
 
+
     public Spider getSpider(String key, String api, String ext, String jar) {
         Class<?> classLoader = null;
         if (!jar.isEmpty()) {
@@ -114,7 +122,7 @@ public class JsLoader {
         if (spiders.containsKey(key))
             return spiders.get(key);
         try {
-            SpiderJS sp = new SpiderJS(key, api, ext, classLoader);
+            Spider sp = new JsSpider(key, api, classLoader);
             sp.init(App.getInstance(), ext);
             spiders.put(key, sp);
             return sp;
@@ -126,9 +134,9 @@ public class JsLoader {
 
     public Object[] proxyInvoke(Map<String, String> params) {
         try {
-            SpiderJS proxyFun = spiders.get(recentJarKey);
+            Spider proxyFun = spiders.get(recentJarKey);
             if (proxyFun != null) {
-                return proxyFun.proxyInvoke(params);
+                return proxyFun.proxyLocal(params);
             }
         } catch (Throwable th) {
             LOG.e("proxyInvoke", th);

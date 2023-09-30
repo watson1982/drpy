@@ -20,13 +20,12 @@ public class P2PClass {
         }
 
         public void run() {
-            P2PClass p2PClass = P2PClass.this;
-            p2PClass.path = this.CardPath + "/jpali";
-            File file = new File(P2PClass.this.path);
+            path = CardPath + "/jpali";
+            File file = new File(path);
             if (!file.exists()) {
                 file.mkdirs();
             }
-            P2PClass.port = P2PClass.this.doxstarthttpd("TEST3E63BAAECDAA79BEAA91853490A69F08".getBytes(), this.CardPath.getBytes());
+            P2PClass.port = P2PClass.this.doxstarthttpd("TEST3E63BAAECDAA79BEAA91853490A69F08".getBytes(), CardPath.getBytes());
         }
     }
 

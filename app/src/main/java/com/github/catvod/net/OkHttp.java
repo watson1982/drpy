@@ -1,16 +1,14 @@
 package com.github.catvod.net;
 
-import android.content.Context;
 import android.util.ArrayMap;
 
-import com.github.tvbox.osc.bean.Doh;
+import com.github.tvbox.osc.util.OkGoHelper;
+import com.github.tvbox.osc.util.urlhttp.BrotliInterceptor;
 
-import java.io.File;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import okhttp3.Cache;
 import okhttp3.Call;
 import okhttp3.Dns;
 import okhttp3.Headers;
@@ -23,9 +21,7 @@ import okhttp3.dnsoverhttps.DnsOverHttps;
 public class OkHttp {
 
     private static final int TIMEOUT = 30 * 1000;
-    private static final int CACHE = 50 * 1024 * 1024;
 
-    private DnsOverHttps dns;
     private OkHttpClient client;
     private OkHttpClient noRedirect;
 
@@ -35,13 +31,6 @@ public class OkHttp {
 
     public static OkHttp get() {
         return Loader.INSTANCE;
-    }
-
-    public void setDoh(Context context, Doh doh) {
-        OkHttpClient dohClient = new OkHttpClient.Builder().cache(new Cache(new File(context.getCacheDir(), "http_cache"), CACHE)).hostnameVerifier(com.github.catvod.net.SSLSocketFactoryCompat.hostnameVerifier).sslSocketFactory(new SSLSocketFactoryCompat(), SSLSocketFactoryCompat.trustAllCert).build();
-        dns = doh.getUrl().isEmpty() ? null : new DnsOverHttps.Builder().client(dohClient).url(HttpUrl.get(doh.getUrl())).bootstrapDnsHosts(doh.getHosts()).build();
-        client = null;
-        noRedirect = null;
     }
 
     public static OkHttpClient client() {
@@ -55,11 +44,11 @@ public class OkHttp {
     }
 
     public static Dns dns() {
-        return get().dns != null ? get().dns : Dns.SYSTEM;
+        return OkGoHelper.dnsOverHttps != null ? OkGoHelper.dnsOverHttps : Dns.SYSTEM;
     }
 
     public static OkHttpClient client(int timeout) {
-        return new OkHttpClient.Builder().connectTimeout(timeout, TimeUnit.MILLISECONDS).readTimeout(timeout, TimeUnit.MILLISECONDS).writeTimeout(timeout, TimeUnit.MILLISECONDS).dns(dns()).hostnameVerifier(com.github.catvod.net.SSLSocketFactoryCompat.hostnameVerifier).sslSocketFactory(new SSLSocketFactoryCompat(), SSLSocketFactoryCompat.trustAllCert).build();
+        return new OkHttpClient.Builder().connectionSpecs(OkGoHelper.getConnectionSpec()).addInterceptor(new BrotliInterceptor()).connectTimeout(timeout, TimeUnit.MILLISECONDS).readTimeout(timeout, TimeUnit.MILLISECONDS).writeTimeout(timeout, TimeUnit.MILLISECONDS).dns(dns()).hostnameVerifier(SSLSocketFactoryCompat.hostnameVerifier).sslSocketFactory(new SSLSocketFactoryCompat(), SSLSocketFactoryCompat.trustAllCert).build();
     }
 
     public static Call newCall(String url) {

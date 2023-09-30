@@ -1,6 +1,5 @@
 package com.github.tvbox.osc.util;
 
-import com.github.tvbox.osc.util.urlhttp.OkHttpUtil;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -18,7 +17,7 @@ import java.util.LinkedHashMap;
 public class TxtSubscribe {
 
     public static void subscribe(LinkedHashMap<String, LinkedHashMap<String, ArrayList<String>>> allLives, String url, HashMap<String, String> headers) {
-        String content = OkHttpUtil.string(url, headers);
+        String content = FileUtils.get(url, headers);
         parse(allLives, content);
     }
 

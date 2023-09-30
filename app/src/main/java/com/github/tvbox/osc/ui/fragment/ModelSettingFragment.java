@@ -13,6 +13,7 @@ import androidx.annotation.NonNull;
 import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.recyclerview.widget.DiffUtil;
 
+import com.github.catvod.crawler.JsLoader;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.base.BaseActivity;
@@ -34,7 +35,6 @@ import com.github.tvbox.osc.util.HeavyTaskUtil;
 import com.github.tvbox.osc.util.HistoryHelper;
 import com.github.tvbox.osc.util.OkGoHelper;
 import com.github.tvbox.osc.util.PlayerHelper;
-import com.github.tvbox.osc.util.js.JSEngine;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.callback.FileCallback;
 import com.lzy.okgo.model.Progress;
@@ -746,7 +746,7 @@ public class ModelSettingFragment extends BaseLazyFragment {
             public void onClick(View v) {
                 Toast.makeText(mContext, "删除缓存" + FileUtils.getTotalCacheSize(mContext), Toast.LENGTH_SHORT).show();
                 HeavyTaskUtil.executeNewTask(FileUtils::clearAllCache);
-                JSEngine.getInstance().stopAll();
+                JsLoader.stopAll();
                 v.postDelayed(new Runnable() {
                     @Override
                     public void run() {

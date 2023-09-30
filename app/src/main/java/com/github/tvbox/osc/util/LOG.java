@@ -16,31 +16,31 @@ public class LOG {
 
     public static void e(Throwable t) {
         Log.e(TAG, t.getMessage(), t);
-        EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", TAG) + Log.getStackTraceString(t)));
+        EventBus.getDefault().post(new LogEvent(String.format("E/%s ==> ", TAG) + Log.getStackTraceString(t)));
     }
 
     public static void e(String tag, Throwable t) {
         Log.e(tag, t.getMessage(), t);
-        EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", tag) + Log.getStackTraceString(t)));
+        EventBus.getDefault().post(new LogEvent(String.format("E/%s ==> ", tag) + Log.getStackTraceString(t)));
     }
 
     public static void e(String msg) {
         Log.e(TAG, "" + msg);
-        EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", TAG) + msg));
+        EventBus.getDefault().post(new LogEvent(String.format("E/%s ==> ", TAG) + msg));
     }
 
     public static void e(String tag, String msg) {
         Log.e(tag, msg);
-        EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", tag) + msg));
+        EventBus.getDefault().post(new LogEvent(String.format("E/%s ==> ", tag) + msg));
     }
 
     public static void i(String msg) {
         Log.i(TAG, msg);
-        EventBus.getDefault().post(new LogEvent(String.format("【I/%s】=>>>", TAG) + msg));
+        EventBus.getDefault().post(new LogEvent(String.format("I/%s ==> ", TAG) + msg));
     }
 
     public static void i(String tag, String msg) {
         Log.i(tag, msg);
-        EventBus.getDefault().post(new LogEvent(String.format("【I/%s】=>>>", tag) + msg));
+        EventBus.getDefault().post(new LogEvent(String.format("I/%s ==> ", tag) + msg));
     }
 }

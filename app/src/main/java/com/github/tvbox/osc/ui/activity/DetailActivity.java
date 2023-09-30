@@ -53,6 +53,7 @@ import com.github.tvbox.osc.util.HeavyTaskUtil;
 import com.github.tvbox.osc.util.MD5;
 import com.github.tvbox.osc.util.SearchHelper;
 import com.github.tvbox.osc.util.js.jianpian;
+import com.github.tvbox.osc.util.thunder.Thunder;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
 import com.jieba_android.JiebaSegmenter;
 import com.jieba_android.RequestCallback;
@@ -240,8 +241,9 @@ public class DetailActivity extends BaseActivity {
                     if (vodInfo.seriesMap.get(vodInfo.playFlag).size() > vodInfo.playIndex) {
                         vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.playIndex).selected = true;
                     }
+                    refreshList();
                     insertVod(sourceKey, vodInfo);
-                    seriesAdapter.notifyDataSetChanged();
+                    //seriesAdapter.notifyDataSetChanged();
                 }
             }
         });
@@ -772,6 +774,7 @@ public class DetailActivity extends BaseActivity {
                         //保存历史
                         insertVod(sourceKey, vodInfo);
                     }
+
                 } else if (event.obj instanceof JSONObject) {
                     vodInfo.playerCfg = event.obj.toString();
                     //保存历史
@@ -939,7 +942,8 @@ public class DetailActivity extends BaseActivity {
         HeavyTaskUtil.executeNewTask(new Runnable() {
             @Override
             public void run() {
-                jianpian.finish();
+                Thunder.stop(false);//停止磁力下载
+                jianpian.finish();//停止p2p下载
                 OkGo.getInstance().cancelTag("fenci");
                 OkGo.getInstance().cancelTag("detail");
                 OkGo.getInstance().cancelTag("quick_search");

@@ -73,6 +73,7 @@ import com.github.tvbox.osc.ui.dialog.SubtitleDialog;
 import com.github.tvbox.osc.util.AdBlocker;
 import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
+import com.github.tvbox.osc.util.HeavyTaskUtil;
 import com.github.tvbox.osc.util.LOG;
 import com.github.tvbox.osc.util.MD5;
 import com.github.tvbox.osc.util.PlayerHelper;
@@ -892,6 +893,13 @@ public class PlayActivity extends BaseActivity {
         }
         stopLoadWebView(true);
         stopParse();
+        HeavyTaskUtil.executeNewTask(new Runnable() {
+            @Override
+            public void run() {
+                Thunder.stop(false);//停止磁力下载
+                jianpian.finish();//停止p2p下载
+            }
+        });
     }
 
     private VodInfo mVodInfo;
@@ -1447,10 +1455,14 @@ public class PlayActivity extends BaseActivity {
     }
 
     boolean checkVideoFormat(String url) {
-        if (sourceBean.getType() == 3) {
-            Spider sp = ApiConfig.get().getCSP(sourceBean);
-            if (sp != null && sp.manualVideoCheck())
-                return sp.isVideoFormat(url);
+        try {
+            if (sourceBean.getType() == 3) {
+                Spider sp = ApiConfig.get().getCSP(sourceBean);
+                if (sp != null && sp.manualVideoCheck())
+                    return sp.isVideoFormat(url);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return VideoParseRuler.checkIsVideoForParse(webUrl, url);
     }

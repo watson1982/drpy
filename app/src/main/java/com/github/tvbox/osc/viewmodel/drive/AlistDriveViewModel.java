@@ -2,13 +2,14 @@ package com.github.tvbox.osc.viewmodel.drive;
 
 import com.github.tvbox.osc.bean.DriveFolderFile;
 import com.github.tvbox.osc.util.UA;
-import com.github.tvbox.osc.util.urlhttp.OkHttpUtil;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.callback.AbsCallback;
 import com.lzy.okgo.model.Response;
+import com.lzy.okgo.request.GetRequest;
 import com.lzy.okgo.request.PostRequest;
 
 import org.json.JSONArray;
@@ -27,6 +28,18 @@ import java.util.List;
 public class AlistDriveViewModel extends AbstractDriveViewModel {
 
     private void setRequestHeader(PostRequest request, String origin) {
+        request.headers("User-Agent", UA.random());
+        if (origin != null && !origin.isEmpty()) {
+            if (origin.endsWith("/"))
+                origin = origin.substring(0, origin.length() - 1);
+            request.headers("origin", origin);
+            request.headers("Referer", origin);
+        }
+        request.headers("accept", "application/json, text/plain, */*");
+        request.headers("content-type", "application/json;charset=UTF-8");
+    }
+
+    private void setRequestHeader(GetRequest request, String origin) {
         request.headers("User-Agent", UA.random());
         if (origin != null && !origin.isEmpty()) {
             if (origin.endsWith("/"))
@@ -72,7 +85,10 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                     String webLink = getUrl(config.get("url").getAsString());
                     try {
                         if (currentDrive.version == 0) {
-                            String result = OkHttpUtil.get(webLink + "/api/public/settings");
+                            GetRequest<String> request = OkGo.<String>get(webLink + "/api/public/settings").tag("drive");
+                            setRequestHeader(request, webLink);
+                            String result = request.execute().body().string();
+
                             JSONObject opt = new JSONObject(result);
                             Object obj = new JSONTokener(opt.optString("data")).nextValue();
                             if (obj instanceof JSONObject) {

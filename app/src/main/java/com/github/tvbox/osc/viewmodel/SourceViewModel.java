@@ -7,6 +7,7 @@ import android.util.Base64;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
+import com.github.catvod.crawler.JsLoader;
 import com.github.catvod.crawler.Spider;
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.base.App;
@@ -19,9 +20,9 @@ import com.github.tvbox.osc.bean.MovieSort;
 import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.util.DefaultConfig;
+import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LOG;
-import com.github.tvbox.osc.util.js.JSEngine;
 import com.github.tvbox.osc.util.thunder.Thunder;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -40,6 +41,7 @@ import org.greenrobot.eventbus.EventBus;
 import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -69,7 +71,7 @@ public class SourceViewModel extends ViewModel {
         if (searchExecutorService != null) {
             searchExecutorService.shutdownNow();
             searchExecutorService = null;
-            JSEngine.getInstance().stopAll();
+            JsLoader.stopAll();
         }
         searchExecutorService = Executors.newFixedThreadPool(5);
     }
@@ -681,8 +683,8 @@ public class SourceViewModel extends ViewModel {
                 @Override
                 public void run() {
                     Spider sp = ApiConfig.get().getCSP(sourceBean);
-                    String json = sp.playerContent(playFlag, url, ApiConfig.get().getVipParseFlags());
                     try {
+                        String json = sp.playerContent(playFlag, url, ApiConfig.get().getVipParseFlags());
                         JSONObject result = new JSONObject(json);
                         result.put("key", url);
                         result.put("proKey", progressKey);
@@ -755,6 +757,7 @@ public class SourceViewModel extends ViewModel {
                 }
                 result.put("url", url);
                 result.put("playUrl", playUrl);
+                result.put("subtKey", subtitleKey);
                 result.put("flag", playFlag);
                 playResult.postValue(result);
             } catch (Throwable th) {
@@ -762,9 +765,13 @@ public class SourceViewModel extends ViewModel {
                 playResult.postValue(null);
             }
         } else if (type == 4) {
+            String extend=sourceBean.getExt();
+            extend=getFixUrl(extend);
+            if(URLEncoder.encode(extend).length()>1000)extend="";
             OkGo.<String>get(sourceBean.getApi())
                     .params("play", url)
                     .params("flag", playFlag)
+                    .params("extend", extend)
                     .tag("play")
                     .execute(new AbsCallback<String>() {
                         @Override
@@ -783,8 +790,8 @@ public class SourceViewModel extends ViewModel {
                             try {
                                 JSONObject result = new JSONObject(json);
                                 result.put("key", url);
-                                result.put("url", url);
                                 result.put("proKey", progressKey);
+                                result.put("subtKey", subtitleKey);
                                 if (!result.has("flag"))
                                     result.put("flag", playFlag);
                                 playResult.postValue(result);
@@ -803,6 +810,15 @@ public class SourceViewModel extends ViewModel {
         } else {
             playResult.postValue(null);
         }
+    }
+
+    private String getFixUrl(String content){
+        if (content.startsWith("http://127.0.0.1")) {
+            String path = content.replaceAll("^http.+/file/", FileUtils.getRootPath()+"/");
+            path = path.replaceAll("localhost/", "/");
+            content = FileUtils.readFileToString(path,"UTF-8");
+        }
+        return content;
     }
 
     private MovieSort.SortFilter getSortFilter(JsonObject obj) {
@@ -914,55 +930,64 @@ public class SourceViewModel extends ViewModel {
         }
     }
 
-    private void checkThunder(AbsXml data) {
+    public void checkThunder(AbsXml data, int index) {
         boolean thunderParse = false;
         if (data.movie != null && data.movie.videoList != null && data.movie.videoList.size() == 1) {
             Movie.Video video = data.movie.videoList.get(0);
-            if (video != null && video.urlBean != null && video.urlBean.infoList != null && video.urlBean.infoList.size() == 1) {
-                Movie.Video.UrlBean.UrlInfo urlInfo = video.urlBean.infoList.get(0);
-                if (urlInfo != null && urlInfo.beanList.size() == 1 && Thunder.isSupportUrl(urlInfo.beanList.get(0).url)) {
-                    thunderParse = true;
-                    Thunder.parse(App.getInstance(), urlInfo.beanList.get(0).url, new Thunder.ThunderCallback() {
-                        @Override
-                        public void status(int code, String info) {
-                            if (code >= 0) {
-                                LOG.i(info);
-                            } else {
-                                urlInfo.beanList.get(0).name = info;
-                                detailResult.postValue(data);
-                            }
+            if (video != null && video.urlBean != null && video.urlBean.infoList != null) {
+                for (int idx=0;idx<video.urlBean.infoList.size();idx++) {
+                    Movie.Video.UrlBean.UrlInfo urlInfo=video.urlBean.infoList.get(idx);
+                    if(urlInfo != null){
+                        List<String> urlList = new ArrayList<>();
+                        for (Movie.Video.UrlBean.UrlInfo.InfoBean infoBean : urlInfo.beanList) {
+                            urlList.add(infoBean.url);
                         }
-
-                        @Override
-                        public void list(String playList) {
-                            urlInfo.urls = playList;
-                            String[] str = playList.split("#");
-                            List<Movie.Video.UrlBean.UrlInfo.InfoBean> infoBeanList = new ArrayList<>();
-                            for (String s : str) {
-                                if (s.contains("$")) {
-                                    String[] ss = s.split("\\$");
-                                    if (ss.length > 0) {
-                                        if (ss.length >= 2) {
-                                            infoBeanList.add(new Movie.Video.UrlBean.UrlInfo.InfoBean(ss[0], ss[1]));
-                                        } else {
-                                            infoBeanList.add(new Movie.Video.UrlBean.UrlInfo.InfoBean((infoBeanList.size() + 1) + "", ss[0]));
-                                        }
+                        if (Thunder.isSupportUrl(urlInfo.beanList.get(0).url)) {
+                            thunderParse = true;
+                            Thunder.parse(App.getInstance(), urlList, new Thunder.ThunderCallback() {
+                                @Override
+                                public void status(int code, String info) {
+                                    if (code >= 0) {
+                                        LOG.i(info);
+                                    } else {
+                                        urlInfo.beanList.get(0).name = info;
+                                        detailResult.postValue(data);
                                     }
                                 }
-                            }
-                            urlInfo.beanList = infoBeanList;
-                            detailResult.postValue(data);
-                        }
 
-                        @Override
-                        public void play(String url) {
+                                @Override
+                                public void list(String playList) {
+                                    urlInfo.urls = playList;
+                                    String[] str = playList.split("#");
+                                    List<Movie.Video.UrlBean.UrlInfo.InfoBean> infoBeanList = new ArrayList<>();
+                                    for (String s : str) {
+                                        if (s.contains("$")) {
+                                            String[] ss = s.split("\\$");
 
+                                            if (ss.length > 0) {
+                                                if (ss.length >= 2) {
+                                                    infoBeanList.add(new Movie.Video.UrlBean.UrlInfo.InfoBean(ss[0], ss[1]));
+                                                } else {
+                                                    infoBeanList.add(new Movie.Video.UrlBean.UrlInfo.InfoBean((infoBeanList.size() + 1) + "", ss[0]));
+                                                }
+                                            }
+                                        }
+                                    }
+                                    urlInfo.beanList = infoBeanList;
+                                    detailResult.postValue(data);
+                                }
+
+                                @Override
+                                public void play(String url) {
+
+                                }
+                            });
                         }
-                    });
+                    }
                 }
             }
         }
-        if (!thunderParse) {
+        if (!thunderParse && index==0) {
             detailResult.postValue(data);
         }
     }
@@ -987,7 +1012,7 @@ public class SourceViewModel extends ViewModel {
                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, data));
             } else if (result != null) {
                 if (result == detailResult) {
-                    checkThunder(data);
+                    checkThunder(data,0);
                 } else {
                     result.postValue(data);
                 }
@@ -1034,7 +1059,7 @@ public class SourceViewModel extends ViewModel {
                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, data));
             } else if (result != null) {
                 if (result == detailResult) {
-                    checkThunder(data);
+                    checkThunder(data,0);
                 } else {
                     result.postValue(data);
                 }

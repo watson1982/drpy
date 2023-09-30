@@ -16,6 +16,7 @@
 package com.google.android.exoplayer2.extractor.ts;
 
 import static com.google.android.exoplayer2.extractor.ts.TsPayloadReader.FLAG_PAYLOAD_UNIT_START_INDICATOR;
+import static java.lang.annotation.ElementType.TYPE_USE;
 
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
@@ -44,6 +45,7 @@ import java.io.IOException;
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,8 +54,8 @@ import java.util.List;
 /** Extracts data from the MPEG-2 TS container format. */
 public final class MyTsExtractor implements Extractor {
 
-  /** Factory for {@link MyTsExtractor} instances. */
-  public static final ExtractorsFactory FACTORY = () -> new Extractor[] {new MyTsExtractor()};
+  /** Factory for {@link TsExtractor} instances. */
+  public static final ExtractorsFactory FACTORY = () -> new Extractor[] {new TsExtractor()};
 
   /**
    * Modes for the extractor. One of {@link #MODE_MULTI_PMT}, {@link #MODE_SINGLE_PMT} or {@link
@@ -61,6 +63,7 @@ public final class MyTsExtractor implements Extractor {
    */
   @Documented
   @Retention(RetentionPolicy.SOURCE)
+  @Target(TYPE_USE)
   @IntDef({MODE_MULTI_PMT, MODE_SINGLE_PMT, MODE_HLS})
   public @interface Mode {}
 
@@ -111,7 +114,7 @@ public final class MyTsExtractor implements Extractor {
   private static final int BUFFER_SIZE = TS_PACKET_SIZE * 50;
   private static final int SNIFF_TS_PACKET_COUNT = 5;
 
-  @Mode private final int mode;
+  private final @Mode int mode;
   private final int timestampSearchBytes;
   private final List<TimestampAdjuster> timestampAdjusters;
   private final ParsableByteArray tsPacketBuffer;
@@ -225,8 +228,7 @@ public final class MyTsExtractor implements Extractor {
   @Override
   public boolean sniff(ExtractorInput input) throws IOException {
     byte[] buffer = tsPacketBuffer.getData();
-
-    input.peekFully(buffer, 0, TS_PACKET_SIZE * 2);
+	input.peekFully(buffer, 0, TS_PACKET_SIZE * 2);
     for (int i = 0; i < TS_PACKET_SIZE * 2; i++) {
       if (buffer[i] == TS_SYNC_BYTE && buffer[i + 1] == 0x40) {
         if (i > 0) input.skipFully(i);
@@ -238,8 +240,7 @@ public final class MyTsExtractor implements Extractor {
       // Try to identify at least SNIFF_TS_PACKET_COUNT packets starting with TS_SYNC_BYTE.
       boolean isSyncBytePatternCorrect = true;
       for (int i = 0; i < SNIFF_TS_PACKET_COUNT; i++) {
-        int ii = startPosCandidate + i * TS_PACKET_SIZE;
-        if (buffer[ii] != TS_SYNC_BYTE) {
+        if (buffer[startPosCandidate + i * TS_PACKET_SIZE] != TS_SYNC_BYTE) {
           isSyncBytePatternCorrect = false;
           break;
         }
@@ -300,8 +301,8 @@ public final class MyTsExtractor implements Extractor {
   }
 
   @Override
-  @ReadResult
-  public int read(ExtractorInput input, PositionHolder seekPosition) throws IOException {
+  public @ReadResult int read(ExtractorInput input, PositionHolder seekPosition)
+      throws IOException {
     long inputLength = input.getLength();
     if (tracksEnded) {
       boolean canReadDuration = inputLength != C.LENGTH_UNSET && mode != MODE_HLS;

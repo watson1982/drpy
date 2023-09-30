@@ -22,6 +22,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.DiffUtil;
 
 import com.chad.library.adapter.base.BaseQuickAdapter;
+import com.github.catvod.crawler.JsLoader;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.base.BaseActivity;
@@ -44,7 +45,6 @@ import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.SearchHelper;
 import com.github.tvbox.osc.util.SettingsUtil;
-import com.github.tvbox.osc.util.js.JSEngine;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -201,7 +201,7 @@ public class SearchActivity extends BaseActivity {
                     try {
                         if (sourceViewModel != null) {
                             pauseRunnable = sourceViewModel.shutdownNow();
-                            JSEngine.getInstance().stopAll();
+                            JsLoader.stopAll();
                             sourceViewModel.destroyExecutor();
                         }
                     } catch (Throwable th) {
@@ -647,7 +647,7 @@ public class SearchActivity extends BaseActivity {
             if (sourceViewModel != null) {
                 sourceViewModel.shutdownNow();
                 sourceViewModel.destroyExecutor();
-                JSEngine.getInstance().stopAll();
+                JsLoader.stopAll();
             }
         } catch (Throwable th) {
             th.printStackTrace();
