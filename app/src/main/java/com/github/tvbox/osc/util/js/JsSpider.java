@@ -1,6 +1,7 @@
 package com.github.tvbox.osc.util.js;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Base64;
 
 import com.github.catvod.crawler.Spider;
@@ -64,7 +65,14 @@ public class JsSpider extends Spider {
 
     @Override
     public void init(Context context, String extend) throws Exception {
-        String ext = FileUtils.loadModule(extend);
+        String ext = "";
+        if(!TextUtils.isEmpty(extend)){
+            if (extend.startsWith("{")) {
+                ext = extend;
+            } else {
+                ext = FileUtils.loadModule(extend);
+            }
+        }
         call("init", Json.valid(ext) ? ctx.parse(ext) : ext);
     }
 
@@ -134,15 +142,48 @@ public class JsSpider extends Spider {
             if (ctx == null) createCtx();
             if (dex != null) createDex();
             //FileUtils.setCacheByte(MD5.encode(api), ctx.compileModule(getContent(), api));
-            ctx.evaluateModule(getContent() + "\n\n;console.log(typeof(pdfl));", api);
+            String content = FileUtils.loadModule(api);
+            if(content.startsWith("//bb")){
+                byte[] b = Base64.decode(content.replace("//bb",""), 0);
+                ctx.execute(byteFF(b), key + ".js","__jsEvalReturn");
+                //quickJS.evaluateModule(String.format(SPIDER_STRING_CODE, key + ".js") + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;console.log(typeof(__JS_SPIDER__));console.log(Object.keys(globalThis." + key + "));");
+            } else {
+                String moduleExtName = "";
+                if (content.contains("__jsEvalReturn") && !content.contains("export default")) {
+                    moduleExtName = "__jsEvalReturn";
+                }
+                ctx.evaluateModule(content, api, moduleExtName);
+                //quickJS.evaluateModule(String.format(SPIDER_STRING_CODE, source.getApi()) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;console.log(typeof(" + key + "));console.log(Object.keys(globalThis." + key + "));");
+            }
+            //ctx.evaluateModule(getContent() + "\n\n;console.log(typeof(pdfl));", api);
             jsObject = (JSObject) ctx.get(ctx.getGlobalObject(), key);
             return null;
         }).get();
     }
 
+    public static byte[] byteFF(byte[] bytes) {
+        byte[] newBt = new byte[bytes.length - 4];
+        newBt[0] = 1;
+        System.arraycopy(bytes, 5, newBt, 1, bytes.length - 5);
+        return newBt;
+    }
+
     private void createCtx() {
         ctx = QuickJSContext.create();
-        ctx.setModuleLoader(new QuickJSContext.DefaultModuleLoader() {
+        ctx.setModuleLoader(new QuickJSContext.BytecodeModuleLoader() {
+            @Override
+            public byte[] getModuleBytecode(String moduleName) {
+                String ss = FileUtils.loadModule(moduleName);
+                if(ss.startsWith("//bb")){
+                    byte[] b = Base64.decode(ss.replace("//bb",""), 0);
+                    return byteFF(b);
+                } else {
+                    return ctx.compileModule(ss, moduleName);
+                }
+            }
+
             @Override
             public String getModuleStringCode(String moduleName) {
                 //FileUtils.setCacheByte(MD5.encode(moduleName), ctx.compileModule(FileUtils.loadModule(moduleName), moduleName));
