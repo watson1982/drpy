@@ -55,7 +55,7 @@ allprojects {
 }
 ext {
     compileSdkVersion = 33
-    minSdkVersion = 16
+    minSdkVersion = 18
     targetSdkVersion = 26
     exoVersion = "2.16.0"
 }
