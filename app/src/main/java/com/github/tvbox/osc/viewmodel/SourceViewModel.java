@@ -3,7 +3,7 @@ package com.github.tvbox.osc.viewmodel;
 import android.net.Uri;
 import android.text.TextUtils;
 import android.util.Base64;
-
+import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
 
@@ -19,7 +19,7 @@ import com.github.tvbox.osc.bean.Movie;
 import com.github.tvbox.osc.bean.MovieSort;
 import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.event.RefreshEvent;
-import com.github.tvbox.osc.player.thirdparty.RemoteTVBox;
+
 import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.HawkConfig;
@@ -37,16 +37,18 @@ import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
-
+import okhttp3.Call;
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONObject;
-
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -262,7 +264,7 @@ public class SourceViewModel extends ViewModel {
                                 sortResult.postValue(null);
                             }
                         });
-            }else {
+          /*  }else {
                 try {
                     Map<String, String> params = new HashMap<>();
                     params.put("filter","true");
@@ -291,7 +293,7 @@ public class SourceViewModel extends ViewModel {
                 } catch (Exception ignored) {
                     sortResult.postValue(null);
                 }
-            }  
+            }  */
         } else {
             sortResult.postValue(null);
         }
