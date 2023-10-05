@@ -40,7 +40,7 @@ import android.widget.Toast;
  * @description:
  */
 public class GridFragment extends BaseLazyFragment {
-    private MovieSort.SortData sortData = new MovieSort.SortData();
+    private MovieSort.SortData sortData = null;
     private TvRecyclerView mGridView;
     private SourceViewModel sourceViewModel;
     private GridFilterDialog gridFilterDialog;
@@ -50,9 +50,8 @@ public class GridFragment extends BaseLazyFragment {
     private boolean isLoad = false;
     private boolean isTop = true;
     private View focusedView = null;
-
-
-    private static class GridInfo {
+    private String default_sourceKey = null;
+    private class GridInfo {
         public String sortID = "";
         public TvRecyclerView mGridView;
         public GridAdapter gridAdapter;
@@ -66,6 +65,16 @@ public class GridFragment extends BaseLazyFragment {
 
     public static GridFragment newInstance(MovieSort.SortData sortData) {
         return new GridFragment().setArguments(sortData);
+    }
+
+    public static GridFragment newInstance(MovieSort.SortData sortData, String sourceKey) {
+        return new GridFragment(sourceKey)
+            .setArguments(sortData);
+    }
+
+    public GridFragment(String sourceKey) {
+        this.default_sourceKey = sourceKey;
+
     }
 
     public GridFragment setArguments(MovieSort.SortData sortData) {
@@ -85,7 +94,12 @@ public class GridFragment extends BaseLazyFragment {
         initData();
     }
 
-    private void changeView(String id) {
+    private void changeView(String id, Boolean isFolder) {
+        if (isFolder) {
+            this.sortData.flag = "1"; // 修改sortData.flag
+        } else {
+            this.sortData.flag = "2"; // 修改sortData.flag
+        }
         initView();
         this.sortData.id = id; // 修改sortData.id为新的ID
         initViewModel();
@@ -98,7 +112,8 @@ public class GridFragment extends BaseLazyFragment {
 
     // 获取当前页面UI的显示模式 ‘0’ 正常模式 '1' 文件夹模式 '2' 显示缩略图的文件夹模式
     public char getUITag() {
-        return sortData.flag == null || sortData.flag.length() == 0 ? '0' : sortData.flag.charAt(0);
+        System.out.println(sortData);
+        return (sortData == null || sortData.flag == null || sortData.flag.length() == 0) ? '0' : sortData.flag.charAt(0);
     }
 
     // 是否允许聚合搜索 sortData.flag的第二个字符为‘1’时允许聚搜
