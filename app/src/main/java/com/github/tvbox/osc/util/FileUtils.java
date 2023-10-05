@@ -105,7 +105,7 @@ public class FileUtils {
                 }
                 return OkGo.<String>get(str).headers(h).execute().body().string();
             } else {
-                return OkGo.<String>get(str).headers("User-Agent", str.startsWith("https://gitcode.net/") ? UA.random() : "okhttp/3.15").execute().body().string();
+                return OkGo.<String>get(str).headers("User-Agent", str.startsWith("https://gitcode.net/") ? UA.randomOne() : "okhttp/3.15").execute().body().string();
             }
 
         } catch (IOException e) {
@@ -376,44 +376,17 @@ public class FileUtils {
         return dir.delete();
     }
 
-    public static String getFileName(String filePath) {
-        if (TextUtils.isEmpty(filePath)) return "";
+    public static String getFileNameWithoutExt(String filePath){
+        if(TextUtils.isEmpty(filePath)) return "";
         String fileName = filePath;
         int p = fileName.lastIndexOf(File.separatorChar);
-        if (p != -1) {
-            fileName = fileName.substring(p + 1);
-        }
-        return fileName;
-    }
-
-    public static String getFileNameWithoutExt(String filePath) {
-        if (TextUtils.isEmpty(filePath)) return "";
-        String fileName = filePath;
-        int p = fileName.lastIndexOf(File.separatorChar);
-        if (p != -1) {
+        if(p != -1){
             fileName = fileName.substring(p + 1);
         }
         p = fileName.indexOf('.');
-        if (p != -1) {
+        if(p != -1){
             fileName = fileName.substring(0, p);
         }
         return fileName;
     }
-
-    public static String getFileExt(String fileName) {
-        if (TextUtils.isEmpty(fileName)) return "";
-        int p = fileName.lastIndexOf('.');
-        if (p != -1) {
-            return fileName.substring(p)
-                .toLowerCase();
-        }
-        return "";
-    }
-
-    public static boolean hasExtension(String path) {
-        int lastDotIndex = path.lastIndexOf(".");
-        int lastSlashIndex = Math.max(path.lastIndexOf("/"), path.lastIndexOf("\\"));
-        // 如果路径中有点号，并且点号在最后一个斜杠之后，认为有后缀
-        return lastDotIndex > lastSlashIndex && lastDotIndex < path.length() - 1;
-    }    
 }
