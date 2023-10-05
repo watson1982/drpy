@@ -473,6 +473,11 @@ public class DetailActivity extends BaseActivity {
 
         setLoadSir(llLayout);
     }
+    
+    public static void alert(String msg) {
+        Toast.makeText(App.getInstance(), msg, Toast.LENGTH_SHORT)
+            .show();
+    }
 
     private void initCheckedSourcesForSearch() {
         mCheckSources = SearchHelper.getSourcesForSearch();
