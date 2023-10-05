@@ -73,7 +73,8 @@ public class ApiConfig {
     private static final Pattern pattern = Pattern.compile("[A-Za-z0]{8}\\*\\*");
     private SourceBean emptyHome = new SourceBean();
     public List<DriveFolderFile> drives;
-
+    private String userAgent = "okhttp/3.15";
+    private String requestAccept = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9";
     private JarLoader jarLoader = new JarLoader();
     private JsLoader jsLoader = new JsLoader();
 
@@ -167,6 +168,8 @@ public class ApiConfig {
         }
         String configKey = TempKey;
         OkGo.<String>get(configUrl)
+                .headers("User-Agent", userAgent)
+                .headers("Accept", requestAccept)
                 .execute(new AbsCallback<String>() {
                     @Override
                     public void onSuccess(Response<String> response) {
@@ -243,7 +246,10 @@ public class ApiConfig {
         }
         boolean isJarInImg = jarUrl.startsWith("img+");
         jarUrl = jarUrl.replace("img+", "");
-        OkGo.<File>get(jarUrl).execute(new AbsCallback<File>() {
+        OkGo.<File>get(jarUrl)
+            .headers("User-Agent", userAgent)
+            .headers("Accept", requestAccept)
+            .execute(new AbsCallback<File>() {
 
             @Override
             public File convertResponse(okhttp3.Response response) throws Throwable {
