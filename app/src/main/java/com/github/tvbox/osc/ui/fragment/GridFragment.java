@@ -190,7 +190,7 @@ public class GridFragment extends BaseLazyFragment {
             @Override
             public void onLoadMoreRequested() {
                 gridAdapter.setEnableLoadMore(true);
-                sourceViewModel.getList(sortData, page);
+                sourceViewModel.getList(sortData, page, default_sourceKey);
             }
         }, mGridView);
         mGridView.setOnItemListener(new TvRecyclerView.OnItemListener() {
@@ -230,7 +230,7 @@ public class GridFragment extends BaseLazyFragment {
                     SourceBean homeSourceBean = ApiConfig.get().getHomeSourceBean();
                     if (("12".indexOf(getUITag()) != -1) && video.tag.equals("folder")) {
                         focusedView = view;
-                        changeView(video.id);
+                        changeView(video.id, video.tag.equals("folder"));
                     } else if(homeSourceBean.isQuickSearch() && Hawk.get(HawkConfig.FAST_SEARCH_MODE, false) && enableFastSearch()){
                         jumpActivity(FastSearchActivity.class, bundle);
                     } else{
@@ -307,7 +307,7 @@ public class GridFragment extends BaseLazyFragment {
         showLoading();
         isLoad = false;
         scrollTop();
-        sourceViewModel.getList(sortData, page);
+        sourceViewModel.getList(sortData, page, default_sourceKey);
     }
 
     public boolean isTop() {
