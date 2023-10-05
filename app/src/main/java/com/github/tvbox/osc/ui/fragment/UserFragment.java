@@ -28,6 +28,7 @@ import com.github.tvbox.osc.ui.adapter.HomeHotVodAdapter;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.StringUtils;
+import com.github.tvbox.osc.util.UA;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
@@ -258,7 +259,9 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
                 vod.name = obj.get("title").getAsString();
                 vod.note = obj.get("rate").getAsString();
                 vod.pic = obj.get("cover").getAsString();
-                result.add(vod);
+                vod.pic = obj.get("cover")
+                    .getAsString() + "@User-Agent=" + UA.randomOne() + "@Referer=https://www.douban.com/";
+                result.add(vod);                
             }
         } catch (Throwable th) {
 
