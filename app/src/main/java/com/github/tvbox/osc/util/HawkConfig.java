@@ -53,7 +53,7 @@ public class HawkConfig {
     public static final String API_MAP = "api_map";
     public static final String API_NAME_HISTORY = "api_name_history";
     public static final String API_NAME = "api_name";
-
+    public static final String REMOTE_TVBOX = "remote_tvbox_host";
 
     public static boolean isDebug(){
         return Hawk.get(DEBUG_OPEN, false);
