@@ -15,4 +15,3 @@ function http(url, options = {}) {
         }
     })
 };
-
