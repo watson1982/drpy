@@ -681,7 +681,7 @@ public class LivePlayActivity extends BaseActivity {
             String savedEpgKey = channel_Name.getChannelName() + "_" + epgDateAdapter.getItem(epgDateAdapter.getSelectedIndex()).getDatePresented();
             if (hsEpg.containsKey(savedEpgKey)) {
                 String[] epgInfo = EpgUtil.getEpgInfo(channel_Name.getChannelName());
-                getTvLogo(channel_Name.getChannelName(), epgInfo == null ? null : epgInfo[0]);
+                //getTvLogo(channel_Name.getChannelName(), epgInfo == null ? null : epgInfo[0]);
                 ArrayList arrayList = (ArrayList) hsEpg.get(savedEpgKey);
                 if (arrayList != null && arrayList.size() > 0) {
                     Date date = new Date();
@@ -732,7 +732,7 @@ public class LivePlayActivity extends BaseActivity {
         timeFormat.setTimeZone(TimeZone.getTimeZone("GMT+8:00"));
         String[] epgInfo = EpgUtil.getEpgInfo(channelName);
         String epgTagName = channelName;
-        getTvLogo(channelName, epgInfo == null ? null : epgInfo[0]);
+       // getTvLogo(channelName, epgInfo == null ? null : epgInfo[0]);
         if (epgInfo != null && !epgInfo[1].isEmpty()) {
             epgTagName = epgInfo[1];
         }
