@@ -292,8 +292,8 @@ public class SourceViewModel extends ViewModel {
                     });
                 } catch (Exception ignored) {
                     sortResult.postValue(null);
-                }
-            }  */
+                }*/
+            }
         } else {
             sortResult.postValue(null);
         }
