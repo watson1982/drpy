@@ -19,7 +19,7 @@ import com.github.tvbox.osc.bean.Movie;
 import com.github.tvbox.osc.bean.MovieSort;
 import com.github.tvbox.osc.bean.SourceBean;
 import com.github.tvbox.osc.event.RefreshEvent;
-
+import com.github.tvbox.osc.player.thirdparty.RemoteTVBox;
 import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.HawkConfig;
@@ -264,7 +264,7 @@ public class SourceViewModel extends ViewModel {
                                 sortResult.postValue(null);
                             }
                         });
-          /*  }else {
+            }else {
                 try {
                     Map<String, String> params = new HashMap<>();
                     params.put("filter","true");
@@ -292,7 +292,7 @@ public class SourceViewModel extends ViewModel {
                     });
                 } catch (Exception ignored) {
                     sortResult.postValue(null);
-                }*/
+                }
             }
         } else {
             sortResult.postValue(null);
