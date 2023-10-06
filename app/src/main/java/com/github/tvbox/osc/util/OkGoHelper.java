@@ -4,23 +4,21 @@ import static okhttp3.ConnectionSpec.CLEARTEXT;
 import static okhttp3.ConnectionSpec.COMPATIBLE_TLS;
 import static okhttp3.ConnectionSpec.MODERN_TLS;
 import static okhttp3.ConnectionSpec.RESTRICTED_TLS;
-
 import android.graphics.Bitmap;
-
 import com.github.catvod.net.SSLSocketFactoryCompat;
 import com.github.tvbox.osc.base.App;
-import com.github.tvbox.osc.picasso.MyOkhttpDownLoader;
 import com.github.tvbox.osc.util.urlhttp.BrotliInterceptor;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.https.HttpsUtils;
 import com.lzy.okgo.interceptor.HttpLoggingInterceptor;
 import com.lzy.okgo.model.HttpHeaders;
 import com.orhanobut.hawk.Hawk;
-import com.squareup.picasso.Picasso;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.PriorityBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
@@ -31,7 +29,6 @@ import okhttp3.ConnectionSpec;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.dnsoverhttps.DnsOverHttps;
-
 import okhttp3.internal.Util;
 import okhttp3.internal.Version;
 import xyz.doikki.videoplayer.exo.ExoMediaSourceHelper;
@@ -56,6 +53,7 @@ public class OkGoHelper {
         builder.followRedirects(true);
         builder.followSslRedirects(true);
 
+
         try {
             setOkHttpSsl(builder);
         } catch (Throwable th) {
@@ -69,7 +67,7 @@ public class OkGoHelper {
     public static DnsOverHttps dnsOverHttps = null;
 
     public static ArrayList<String> dnsHttpsList = new ArrayList<>();
-
+    
     public static List<ConnectionSpec> getConnectionSpec() {
         return Util.immutableList(RESTRICTED_TLS, MODERN_TLS, COMPATIBLE_TLS, CLEARTEXT);
     }
@@ -123,7 +121,7 @@ public class OkGoHelper {
             th.printStackTrace();
         }
         builder.connectionSpecs(getConnectionSpec());
-        builder.cache(new Cache(new File(App.getInstance().getCacheDir().getAbsolutePath(), "dohcache"), 10 * 1024 * 1024));
+        builder.cache(new Cache(new File(App.getInstance().getCacheDir().getAbsolutePath(), "dohcache"), 100 * 1024 * 1024));
         OkHttpClient dohClient = builder.build();
         String dohUrl = getDohUrl(Hawk.get(HawkConfig.DOH_URL, 0));
         dnsOverHttps = new DnsOverHttps.Builder().client(dohClient).url(dohUrl.isEmpty() ? null : HttpUrl.get(dohUrl)).build();
@@ -178,30 +176,27 @@ public class OkGoHelper {
         noRedirectClient = builder.build();
 
         initExoOkHttpClient();
-        initPicasso(okHttpClient);
+      //  initPicass_o(okHttpClient);
     }
 
-    static void initPicasso(OkHttpClient client) {
+   /* static void initPicass_o(OkHttpClient client) {
         client.dispatcher().setMaxRequestsPerHost(32);
         MyOkhttpDownLoader downloader = new MyOkhttpDownLoader(client);
-        Picasso picasso = new Picasso.Builder(App.getInstance())
+        Picass_o picass_o = new Picass_o.Builder(App.getInstance())
                 .downloader(downloader)
                 .executor(HeavyTaskUtil.getBigTaskExecutorService())
                 .defaultBitmapConfig(Bitmap.Config.RGB_565)
                 .build();
-        Picasso.setSingletonInstance(picasso);
-    }
+        Picass_o.setSingletonInstance(picass_o);
+    }*/
 
     private static synchronized void setOkHttpSsl(OkHttpClient.Builder builder) {
         try {
-
-            final SSLSocketFactory sslSocketFactory = new SSLSocketFactoryCompat();
+        	final SSLSocketFactory sslSocketFactory = new SSLSocketFactoryCompat();
             builder.sslSocketFactory(sslSocketFactory, SSLSocketFactoryCompat.trustAllCert);
             builder.hostnameVerifier(HttpsUtils.UnSafeHostnameVerifier);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
-
-
 }
