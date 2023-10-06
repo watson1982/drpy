@@ -1019,8 +1019,8 @@ public class PlayActivity extends BaseActivity {
                 }
             }
             
-            public void list(String playList) {
-            }
+            @Override
+            public void list(Map < Integer, String > urlMap) {}
 
             @Override
             public void play(String url) {
