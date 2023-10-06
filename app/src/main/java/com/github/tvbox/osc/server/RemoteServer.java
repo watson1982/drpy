@@ -1,14 +1,20 @@
 package com.github.tvbox.osc.server;
 
+import static org.nanohttpd.protocols.http.response.Response.newFixedLengthResponse;
+
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.net.wifi.WifiManager;
 import android.os.Environment;
 import android.text.TextUtils;
-import android.util.Log;
+import android.util.Base64;
 
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
+import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.event.InputMsgEvent;
 import com.github.tvbox.osc.event.LogEvent;
+import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.event.ServerEvent;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.LocalIPAddress;
@@ -19,12 +25,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.github.tvbox.osc.util.StringUtils;
 
-
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 import org.nanohttpd.protocols.http.IHTTPSession;
-
 import org.nanohttpd.protocols.http.NanoHTTPD;
 import org.nanohttpd.protocols.http.request.Method;
 import org.nanohttpd.protocols.http.response.IStatus;
@@ -41,7 +45,13 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
+import java.io.UnsupportedEncodingException;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.text.SimpleDateFormat;
@@ -61,41 +71,34 @@ import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-
 /**
  * @author pj567
  * @date :2021/1/5
  * @description:
  */
 public class RemoteServer extends NanoHTTPD {
-    private Context mContext;
+	private static final Pattern p = Pattern.compile("[ |\t]*(boundary[ |\t]*=[ |\t]*['|\"]?[^\"^'^;^,]*['|\"]?)", Pattern.CASE_INSENSITIVE);
+	private static final String ALLOW_METHODS = Joiner.on(',').join(Arrays.asList(Method.POST, Method.GET, Method.PUT, Method.DELETE));
+    private static final String ALLOW_METHODS_CORS = ALLOW_METHODS + "," + Method.OPTIONS;
+    private static final String DEFAULT_ALLOW_HEADERS = Joiner.on(',').join(Arrays.asList("Content-Type"));
+    private final static char[] ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".toCharArray();
     public static int serverPort = 9978;
+    public static String m3u8Content;
+    /**
+     * 当前websocket 连接
+     */
+    private final AtomicReference<WebSocket> wsReference = new AtomicReference<>();
+    private Context mContext;
     private int timeout;
     private boolean isStarted = false;
     private DataReceiver mDataReceiver;
     private ArrayList<RequestProcess> getRequestList = new ArrayList<>();
     private ArrayList<RequestProcess> postRequestList = new ArrayList<>();
-    private static final Pattern p = Pattern.compile("[ |\t]*(boundary[ |\t]*=[ |\t]*['|\"]?[^\"^'^;^,]*['|\"]?)", Pattern.CASE_INSENSITIVE);
-    /**
-     * 当前websocket 连接
-     */
-    private final AtomicReference<WebSocket> wsReference = new AtomicReference<>();
     private Timer timer;
-    private Timer getTimer(){
-        // 懒加载
-        if(timer == null){
-            timer = new Timer(true);
-        }
-        return timer;
-    }
     /**
      * 不支持跨域请求(CORS)
      */
     private boolean noCORS = false;
-    private static final String ALLOW_METHODS = Joiner.on(',').join(Arrays.asList(Method.POST, Method.GET, Method.PUT, Method.DELETE));
-    private static final String ALLOW_METHODS_CORS = ALLOW_METHODS + "," + Method.OPTIONS ;
-    private static final String DEFAULT_ALLOW_HEADERS = Joiner.on(',').join(Arrays.asList("Content-Type"));
-
     public RemoteServer(int port, Context context) {
         super(port);
         mContext = context;
@@ -103,59 +106,39 @@ public class RemoteServer extends NanoHTTPD {
         addGetRequestProcess();
         addPostRequestProcess();
     }
-
-    private void addGetRequestProcess() {
-        getRequestList.add(new RawRequestProcess(this.mContext, "/", R.raw.index, MIME_HTML));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/log", R.raw.logtail, MIME_HTML));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/index.html", R.raw.index, MIME_HTML));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/style.css", R.raw.style, "text/css"));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/css.css", R.raw.css, "text/css"));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/ui.css", R.raw.ui, "text/css"));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/jquery.js", R.raw.jquery, "application/x-javascript"));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/confirm.js", R.raw.confirm, "application/x-javascript"));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/script.js", R.raw.script, "application/x-javascript"));
-        getRequestList.add(new RawRequestProcess(this.mContext, "/favicon.ico", R.drawable.app_icon, "image/x-icon"));
-    }
-
-    private void addPostRequestProcess() {
-        postRequestList.add(new InputRequestProcess(this));
-    }
-
-    @Override
-    public void start(int timeout, boolean daemon) throws IOException {
-        isStarted = true;
-        this.timeout = timeout;
-        super.start(timeout, daemon);
-        EventBus.getDefault().post(new ServerEvent(ServerEvent.SERVER_SUCCESS));
-        // 定时发送PING
-        getTimer().schedule(new TimerTask() {
-
-            @Override
-            public void run() {
-                if (RemoteServer.this.isAlive()){
-                    synchronized (wsReference) {
-                        try{
-                            WebSocket wsSocket = wsReference.get();
-                            if(wsSocket != null && wsSocket.isOpen()){
-                                wsSocket.ping(" ".getBytes());
+    
+    @SuppressLint("DefaultLocale")
+    public static String getLocalIPAddress(Context context) {
+        WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        int ipAddress = wifiManager.getConnectionInfo().getIpAddress();
+        if (ipAddress == 0) {
+            try {
+                Enumeration<NetworkInterface> enumerationNi = NetworkInterface.getNetworkInterfaces();
+                while (enumerationNi.hasMoreElements()) {
+                    NetworkInterface networkInterface = enumerationNi.nextElement();
+                    String interfaceName = networkInterface.getDisplayName();
+                    if (interfaceName.equals("eth0") || interfaceName.equals("wlan0")) {
+                        Enumeration<InetAddress> enumIpAddr = networkInterface.getInetAddresses();
+                        while (enumIpAddr.hasMoreElements()) {
+                            InetAddress inetAddress = enumIpAddr.nextElement();
+                            if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address) {
+                                return inetAddress.getHostAddress();
                             }
-                        }catch (Throwable e) {
-                            com.github.tvbox.osc.util.LOG.e(e);
                         }
                     }
                 }
+            } catch (SocketException e) {
+                e.printStackTrace();
             }
-        }, 0, timeout*3/4);
+        } else {
+            return String.format("%d.%d.%d.%d", (ipAddress & 0xff), (ipAddress >> 8 & 0xff), (ipAddress >> 16 & 0xff), (ipAddress >> 24 & 0xff));
+        }
+        return "0.0.0.0";
     }
-
-    @Override
-    public void stop() {
-        super.stop();
-        isStarted = false;
-        EventBus.getDefault().unregister(this);
-    }
+    
     /**
      * 判断是否为CORS 预检请求请求(Preflight)
+     *
      * @param session
      * @return
      */
@@ -166,69 +149,7 @@ public class RemoteServer extends NanoHTTPD {
                 && headers.containsKey("Access-Control-Request-Method".toLowerCase())
                 && headers.containsKey("Access-Control-Request-Headers".toLowerCase());
     }
-    /**
-     * 封装响应包
-     * @param session http请求
-     * @param resp 响应包
-     * @return resp
-     */
-    private Response wrapResponse(IHTTPSession session,Response resp) {
-        if(null != resp){
-            Map<String, String> headers = session.getHeaders();
-            resp.addHeader("Access-Control-Allow-Credentials", "true");
-            // 如果请求头中包含'Origin',则响应头中'Access-Control-Allow-Origin'使用此值否则为'*'
-            // nanohttd将所有请求头的名称强制转为了小写
-            String origin = MoreObjects.firstNonNull(headers.get("Origin".toLowerCase()), "*");
-            resp.addHeader("Access-Control-Allow-Origin", origin);
-
-            String  requestHeaders = headers.get("Access-Control-Request-Headers".toLowerCase());
-            if(requestHeaders != null){
-                resp.addHeader("Access-Control-Allow-Headers", requestHeaders);
-            }
-        }
-        return resp;
-    }
-    /**
-     * 向响应包中添加CORS包头数据
-     * @param session
-     * @return
-     */
-    private Response responseCORS(IHTTPSession session) {
-        Response resp = wrapResponse(session,Response.newFixedLengthResponse(""));
-        Map<String, String> headers = session.getHeaders();
-        resp.addHeader("Access-Control-Allow-Methods",
-                noCORS ? ALLOW_METHODS : ALLOW_METHODS_CORS);
-
-        String requestHeaders = headers.get("Access-Control-Request-Headers".toLowerCase());
-        String allowHeaders = MoreObjects.firstNonNull(requestHeaders, DEFAULT_ALLOW_HEADERS);
-        resp.addHeader("Access-Control-Allow-Headers", allowHeaders);
-        //resp.addHeader(HeaderNames.ACCESS_CONTROL_MAX_AGE, "86400");
-        resp.addHeader("Access-Control-Max-Age", "0");
-        return resp;
-    }
-    /**
-     * 设置是否不支持跨域请求(CORS),默认false<br>
-     * @param noCORS 要设置的 noCORS
-     * @return 当前对象
-     */
-    public RemoteServer setNoCORS(boolean noCORS) {
-        this.noCORS = noCORS;
-        return this;
-    }
-
-    private boolean isWebSocketConnectionHeader(Map<String, String> headers) {
-        String connection = headers.get("connection");
-        return connection != null && connection.toLowerCase().contains("Upgrade".toLowerCase());
-    }
-    private boolean isWebsocketRequested(IHTTPSession session) {
-        Map<String, String> headers = session.getHeaders();
-        String upgrade = headers.get("upgrade");
-        boolean isCorrectConnection = isWebSocketConnectionHeader(headers);
-        boolean isUpgrade = "websocket".equalsIgnoreCase(upgrade);
-        return isUpgrade && isCorrectConnection;
-    }
-    private final static char[] ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/".toCharArray();
-
+    
     /**
      * Translates the specified byte array into Base64 string.
      * <p>
@@ -237,8 +158,7 @@ public class RemoteServer extends NanoHTTPD {
      * http://stackoverflow.com/a/4265472
      * </p>
      *
-     * @param buf
-     *            the byte array (not null)
+     * @param buf the byte array (not null)
      * @return the translated Base64 string (not null)
      */
     private static String encodeBase64(byte[] buf) {
@@ -265,7 +185,7 @@ public class RemoteServer extends NanoHTTPD {
         }
         return new String(ar);
     }
-
+    
     public static String makeAcceptKey(String key) throws NoSuchAlgorithmException {
         MessageDigest md = MessageDigest.getInstance("SHA-1");
         String text = key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
@@ -273,22 +193,155 @@ public class RemoteServer extends NanoHTTPD {
         byte[] sha1hash = md.digest();
         return encodeBase64(sha1hash);
     }
+    
+    public static Response createPlainTextResponse(IStatus status, String text) {
+        return newFixedLengthResponse(status, MIME_PLAINTEXT, text);
+    }
 
+    public static Response createJSONResponse(IStatus status, String text) {
+        return newFixedLengthResponse(status, "application/json", text);
+    }
+    
+    private Timer getTimer() {
+        // 懒加载
+        if (timer == null) {
+            timer = new Timer(true);
+        }
+        return timer;
+    }
+    
+    private void addGetRequestProcess() {
+        getRequestList.add(new RawRequestProcess(this.mContext, "/", R.raw.index, MIME_HTML));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/log", R.raw.logtail, MIME_HTML));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/index.html", R.raw.index, MIME_HTML));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/style.css", R.raw.style, "text/css"));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/css.css", R.raw.css, "text/css"));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/ui.css", R.raw.ui, "text/css"));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/jquery.js", R.raw.jquery, "application/x-javascript"));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/confirm.js", R.raw.confirm, "application/x-javascript"));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/script.js", R.raw.script, "application/x-javascript"));
+        getRequestList.add(new RawRequestProcess(this.mContext, "/favicon.ico", R.drawable.app_icon, "image/x-icon"));
+    }    
+    
+    private void addPostRequestProcess() {
+        postRequestList.add(new InputRequestProcess(this));
+    }
+    
+    public void start(int timeout, boolean daemon) throws IOException {
+        isStarted = true;
+        this.timeout = timeout;
+        super.start(timeout, daemon);
+        EventBus.getDefault().post(new ServerEvent(ServerEvent.SERVER_SUCCESS));
+        // 定时发送PING
+        getTimer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                if (RemoteServer.this.isAlive()) {
+                    synchronized (wsReference) {
+                        try {
+                            WebSocket wsSocket = wsReference.get();
+                            if (wsSocket != null && wsSocket.isOpen()) {
+                                wsSocket.ping(" ".getBytes());
+                            }
+                        } catch (Throwable e) {
+                            com.github.tvbox.osc.util.LOG.e(e);
+                        }
+                    }
+                }
+            }
+        }, 0, timeout * 3 / 4);
+    }
+    
+    @Override
+    public void stop() {
+        super.stop();
+        isStarted = false;
+        EventBus.getDefault().unregister(this);
+    }
+    
+    /**
+     * 封装响应包
+     *
+     * @param session http请求
+     * @param resp    响应包
+     * @return resp
+     */
+    private Response wrapResponse(IHTTPSession session, Response resp) {
+        if (null != resp) {
+            Map<String, String> headers = session.getHeaders();
+            resp.addHeader("Access-Control-Allow-Credentials", "true");
+            // 如果请求头中包含'Origin',则响应头中'Access-Control-Allow-Origin'使用此值否则为'*'
+            // nanohttd将所有请求头的名称强制转为了小写
+            String origin = MoreObjects.firstNonNull(headers.get("Origin".toLowerCase()), "*");
+            resp.addHeader("Access-Control-Allow-Origin", origin);
+
+            String requestHeaders = headers.get("Access-Control-Request-Headers".toLowerCase());
+            if (requestHeaders != null) {
+                resp.addHeader("Access-Control-Allow-Headers", requestHeaders);
+            }
+        }
+        return resp;
+    }
+
+    /**
+     * 向响应包中添加CORS包头数据
+     *
+     * @param session
+     * @return
+     */
+    private Response responseCORS(IHTTPSession session) {
+        Response resp = wrapResponse(session, newFixedLengthResponse(""));
+        Map<String, String> headers = session.getHeaders();
+        resp.addHeader("Access-Control-Allow-Methods",
+                noCORS ? ALLOW_METHODS : ALLOW_METHODS_CORS);
+
+        String requestHeaders = headers.get("Access-Control-Request-Headers".toLowerCase());
+        String allowHeaders = MoreObjects.firstNonNull(requestHeaders, DEFAULT_ALLOW_HEADERS);
+        resp.addHeader("Access-Control-Allow-Headers", allowHeaders);
+        //resp.addHeader(HeaderNames.ACCESS_CONTROL_MAX_AGE, "86400");
+        resp.addHeader("Access-Control-Max-Age", "0");
+        return resp;
+    }
+
+    /**
+     * 设置是否不支持跨域请求(CORS),默认false<br>
+     *
+     * @param noCORS 要设置的 noCORS
+     * @return 当前对象
+     */
+    public RemoteServer setNoCORS(boolean noCORS) {
+        this.noCORS = noCORS;
+        return this;
+    }
+
+    private boolean isWebSocketConnectionHeader(Map<String, String> headers) {
+        String connection = headers.get("connection");
+        return connection != null && connection.toLowerCase().contains("Upgrade".toLowerCase());
+    }
+
+    private boolean isWebsocketRequested(IHTTPSession session) {
+        Map<String, String> headers = session.getHeaders();
+        String upgrade = headers.get("upgrade");
+        boolean isCorrectConnection = isWebSocketConnectionHeader(headers);
+        boolean isUpgrade = "websocket".equalsIgnoreCase(upgrade);
+        return isUpgrade && isCorrectConnection;
+    }
+    
     @SuppressWarnings("deprecation")
     @Override
     public Response serve(final IHTTPSession session) {
-        if (isWebsocketRequested(session)) {
-            if(isPreflightRequest(session)){
+    	if (isWebsocketRequested(session)) {
+            if (isPreflightRequest(session)) {
                 return responseCORS(session);
             }
             Map<String, String> headers = session.getHeaders();
             if (!"13".equalsIgnoreCase(headers.get("sec-websocket-version"))) {
-                return Response.newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT,
+                return newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT,
                         "Invalid Websocket-Version " + headers.get("sec-websocket-version"));
             }
 
             if (!headers.containsKey("sec-websocket-key")) {
-                return Response.newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT, "Missing Websocket-Key");
+                return newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT, "Missing Websocket-Key");
             }
 
             WebSocket webSocket = new DebugWebSocket(session);
@@ -296,7 +349,7 @@ public class RemoteServer extends NanoHTTPD {
             try {
                 handshakeResponse.addHeader("sec-websocket-accept", makeAcceptKey(headers.get("sec-websocket-key")));
             } catch (NoSuchAlgorithmException e) {
-                return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT,
+                return newFixedLengthResponse(Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT,
                         "The SHA-1 Algorithm required for websockets is not available on the server.");
             }
 
@@ -306,191 +359,201 @@ public class RemoteServer extends NanoHTTPD {
 
             return handshakeResponse;
         } else {
-            EventBus.getDefault().post(new ServerEvent(ServerEvent.SERVER_CONNECTION));
-            if(isPreflightRequest(session)){
+	        EventBus.getDefault().post(new ServerEvent(ServerEvent.SERVER_CONNECTION));
+	        if (isPreflightRequest(session)) {
                 return responseCORS(session);
             }
-            if (!StringUtils.isEmpty(session.getUri())) {
-                String fileName = session.getUri().trim();
-                if (fileName.indexOf('?') >= 0) {
-                    fileName = fileName.substring(0, fileName.indexOf('?'));
-                }
-                if (session.getMethod() == Method.GET) {
-                    for (RequestProcess process : getRequestList) {
-                        if (process.isRequest(session, fileName)) {
-                            return process.doResponse(session, fileName, session.getParms(), null);
-                        }
-                    }
-                    if (fileName.equals("/proxy")) {
-                        Map<String, String> params = session.getParms();
-                        if (params.containsKey("do")) {
-                            Object[] rs = ApiConfig.get().proxyLocal(params);
-                            try {
-                                //EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", "proxy") + rs[0]));
-                                int code = (int) rs[0];
-                                String mime = (String) rs[1];
-                                InputStream stream = rs[2] != null ? (InputStream) rs[2] : null;
-                                return Response.newChunkedResponse(
+	        if (!StringUtils.isEmpty(session.getUri())) {
+	            String fileName = session.getUri().trim();
+	            if (fileName.indexOf('?') >= 0) {
+	                fileName = fileName.substring(0, fileName.indexOf('?'));
+	            }
+	            if (session.getMethod() == Method.GET) {
+	                for (RequestProcess process : getRequestList) {
+	                    if (process.isRequest(session, fileName)) {
+	                        return process.doResponse(session, fileName, session.getParms(), null);
+	                    }
+	                }
+	                if (fileName.equals("/proxy")) {
+	                    Map<String, String> params = session.getParms();
+	                    if (params.containsKey("do")) {
+	                        Object[] rs = ApiConfig.get().proxyLocal(params);
+	                        try {
+	                            int code = (int) rs[0];
+	                            String mime = (String) rs[1];
+	                            InputStream stream = rs[2] != null ? (InputStream) rs[2] : null;
+	                            return Response.newChunkedResponse(
                                         Status.lookup(code),
                                         mime,
                                         stream
                                 );
                             } catch (Throwable th) {
-                                EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", "proxy") + Log.getStackTraceString(th)));
-                                return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "500");
+                                return newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "500");
                             }
-                        }
-                    } else if (fileName.startsWith("/file/")) {
-                        try {
-                            String f = fileName.substring(6);
-                            String root = Environment.getExternalStorageDirectory().getAbsolutePath();
-                            String file = root + "/" + f;
-                            File localFile = new File(file);
-                            if (localFile.exists()) {
-                                if (localFile.isFile()) {
-                                    return Response.newChunkedResponse(Status.OK, "application/octet-stream", new FileInputStream(localFile));
-                                } else {
-                                    return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, fileList(root, f));
-                                }
-                            } else {
-                                return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "File " + file + " not found!");
-                            }
-                        } catch (Throwable th) {
-                            return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, th.getMessage());
-                        }
-                    } else if (fileName.equals("/dns-query")) {
-                        String name = session.getParms().get("name");
-                        byte[] rs = null;
-                        try {
-                            rs = OkGoHelper.dnsOverHttps.lookupHttpsForwardSync(name);
-                        } catch (Throwable th) {
-                            rs = new byte[0];
-                        }
-                        return Response.newFixedLengthResponse(Status.OK, "application/dns-message", new ByteArrayInputStream(rs), rs.length);
-                    }
-                } else if (session.getMethod() == Method.POST) {
-                    Map<String, String> files = new HashMap<String, String>();
-                    try {
-                        if (session.getHeaders().containsKey("content-type")) {
-                            String hd = session.getHeaders().get("content-type");
-                            if (hd != null) {
-                                // cuke: 修正中文乱码问题
-                                if (hd.toLowerCase().contains("multipart/form-data") && !hd.toLowerCase().contains("charset=")) {
-                                    Matcher matcher = p.matcher(hd);
-                                    String boundary = matcher.find() ? matcher.group(1) : null;
-                                    if (boundary != null) {
-                                        session.getHeaders().put("content-type", "multipart/form-data; charset=utf-8; " + boundary);
-                                    }
-                                }
-                            }
-                        }
-                        session.parseBody(files);
-                    } catch (IOException IOExc) {
-                        return createPlainTextResponse(Status.INTERNAL_ERROR, "SERVER INTERNAL ERROR: IOException: " + IOExc.getMessage());
-                    } catch (ResponseException rex) {
-                        return createPlainTextResponse(rex.getStatus(), rex.getMessage());
-                    }
-                    for (RequestProcess process : postRequestList) {
-                        if (process.isRequest(session, fileName)) {
-                            return process.doResponse(session, fileName, session.getParms(), files);
-                        }
-                    }
-                    try {
-                        Map<String, String> params = session.getParms();
-                        switch (fileName) {
-                            case "/upload": {
-                                String path = params.get("path");
-                                for (String k : files.keySet()) {
-                                    if (k.startsWith("files-")) {
-                                        String fn = params.get(k);
-                                        String tmpFile = files.get(k);
-                                        File tmp = new File(tmpFile);
-                                        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
-                                        File file = new File(root + "/" + path + "/" + fn);
-                                        if (file.exists())
-                                            file.delete();
-                                        if (tmp.exists()) {
-                                            if (fn.toLowerCase().endsWith(".zip")) {
-                                                unzip(tmp, root + "/" + path);
-                                            } else {
-                                                FileUtils.copyFile(tmp, file);
-                                            }
-                                        }
-                                        if (tmp.exists())
-                                            tmp.delete();
-                                    }
-                                }
-                                return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
-                            }
-                            case "/newFolder": {
-                                String path = params.get("path");
-                                String name = params.get("name");
-                                String root = Environment.getExternalStorageDirectory().getAbsolutePath();
-                                File file = new File(root + "/" + path + "/" + name);
-                                if (!file.exists()) {
-                                    file.mkdirs();
-                                    File flag = new File(root + "/" + path + "/" + name + "/.tvbox_folder");
-                                    if (!flag.exists())
-                                        flag.createNewFile();
-                                }
-                                return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
-                            }
-                            case "/delFolder": {
-                                String path = params.get("path");
-                                String root = Environment.getExternalStorageDirectory().getAbsolutePath();
-                                File file = new File(root + "/" + path);
-                                if (file.exists()) {
-                                    FileUtils.recursiveDelete(file);
-                                }
-                                return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
-                            }
-                            case "/delFile": {
-                                String path = params.get("path");
-                                String root = Environment.getExternalStorageDirectory().getAbsolutePath();
-                                File file = new File(root + "/" + path);
-                                if (file.exists()) {
-                                    file.delete();
-                                }
-                                return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
-                            }
-                        }
-                    } catch (Throwable th) {
-                        return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
-                    }
-                }
-            }
-            //default page: index.html
-            return getRequestList.get(0).doResponse(session, "", null, null);
-        }
+                        }                            
+	                } else if (fileName.startsWith("/file/")) {
+	                    try {
+	                        String f = fileName.substring(6);
+	                        String root = Environment.getExternalStorageDirectory().getAbsolutePath();
+	                        String file = root + "/" + f;
+	                        File localFile = new File(file);
+	                        if (localFile.exists()) {
+	                            if (localFile.isFile()) {
+	                                return Response.newChunkedResponse(Status.OK, "application/octet-stream", new FileInputStream(localFile));
+	                            } else {
+	                                return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, fileList(root, f));
+	                            }
+	                        } else {
+	                            return newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "File " + file + " not found!");
+	                        }
+	                    } catch (Throwable th) {
+	                        return newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, th.getMessage());
+	                    }
+	                } else if (fileName.equals("/dns-query")) {
+	                    String name = session.getParms().get("name");
+	                    byte[] rs = null;
+	                    try {
+	                        rs = OkGoHelper.dnsOverHttps.lookupHttpsForwardSync(name);
+	                    } catch (Throwable th) {
+	                        rs = new byte[0];
+	                    }
+	                    return newFixedLengthResponse(Status.OK, "application/dns-message", new ByteArrayInputStream(rs), rs.length);                
+	                } else if (fileName.startsWith("/push/")) {
+	                    String url = fileName.substring(6);
+	                    if (url.startsWith("b64:")) {
+	                        try {
+	                            url = new String(Base64.decode(url.substring(4), Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP), "UTF-8");
+	                        } catch (UnsupportedEncodingException e) {
+	                            e.printStackTrace();
+	                        }
+	                    } else {
+	                        url = URLDecoder.decode(url);
+	                    }
+	                    EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_PUSH_URL, url));
+	                    return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "ok");    
+	                } else if (fileName.startsWith("/dash/")) {
+	                    String dashData = App.getInstance().getDashData();
+	                    try {
+	                        String data = new String(Base64.decode(dashData, Base64.DEFAULT | Base64.NO_WRAP), "UTF-8");
+	                        return newFixedLengthResponse(
+	                                Status.OK,
+	                                "application/dash+xml",
+	                                data
+	                        );
+	                    } catch (Throwable th) {
+	                        return newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, dashData);
+	                    }
+	                }
+	            } else if (session.getMethod() == Method.POST) {
+	                Map<String, String> files = new HashMap<String, String>();
+	                try {
+	                    if (session.getHeaders().containsKey("content-type")) {
+	                        String hd = session.getHeaders().get("content-type");
+	                        if (hd != null) {
+	                            // cuke: 修正中文乱码问题
+	                            if (hd.toLowerCase().contains("multipart/form-data") && !hd.toLowerCase().contains("charset=")) {
+	                                Matcher matcher = Pattern.compile("[ |\t]*(boundary[ |\t]*=[ |\t]*['|\"]?[^\"^'^;^,]*['|\"]?)", Pattern.CASE_INSENSITIVE).matcher(hd);
+	                                String boundary = matcher.find() ? matcher.group(1) : null;
+	                                if (boundary != null) {
+	                                    session.getHeaders().put("content-type", "multipart/form-data; charset=utf-8; " + boundary);
+	                                }
+	                            }
+	                        }
+	                    }
+	                    session.parseBody(files);
+	                } catch (IOException IOExc) {
+	                    return createPlainTextResponse(Status.INTERNAL_ERROR, "SERVER INTERNAL ERROR: IOException: " + IOExc.getMessage());
+	                } catch (ResponseException rex) {
+	                    return createPlainTextResponse(rex.getStatus(), rex.getMessage());
+	                }
+	                for (RequestProcess process : postRequestList) {
+	                    if (process.isRequest(session, fileName)) {
+	                        return process.doResponse(session, fileName, session.getParms(), files);
+	                    }
+	                }
+	                try {
+	                    Map<String, String> params = session.getParms();
+	                    if (fileName.equals("/upload")) {
+	                        String path = params.get("path");
+	                        for (String k : files.keySet()) {
+	                            if (k.startsWith("files-")) {
+	                                String fn = params.get(k);
+	                                String tmpFile = files.get(k);
+	                                File tmp = new File(tmpFile);
+	                                String root = getpath();
+	                                File file = new File(root + "/" + path + "/" + fn);
+	                                if (file.exists())
+	                                    file.delete();
+	                                if (tmp.exists()) {
+	                                    if (fn.toLowerCase().endsWith(".zip")) {
+	                                        unzip(tmp, root + "/" + path);
+	                                    } else {
+	                                        FileUtils.copyFile(tmp, file);
+	                                    }
+	                                }
+	                                if (tmp.exists())
+	                                    tmp.delete();
+	                            }
+	                        }
+	                        return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+	                    } else if (fileName.equals("/newFolder")) {
+	                        String path = params.get("path");
+	                        String name = params.get("name");
+	                        String root = getpath();
+	                        File file = new File(root + "/" + path + "/" + name);
+	                        if (!file.exists()) {
+	                            file.mkdirs();
+	                            File flag = new File(root + "/" + path + "/" + name + "/.tvbox_folder");
+	                            if (!flag.exists())
+	                                flag.createNewFile();
+	                        }
+	                        return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+	                    } else if (fileName.equals("/delFolder")) {
+	                        String path = params.get("path");
+	                        String root = getpath();
+	                        File file = new File(root + "/" + path);
+	                        if (file.exists()) {
+	                            FileUtils.recursiveDelete(file);
+	                        }
+	                        return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+	                    } else if (fileName.equals("/delFile")) {
+	                        String path = params.get("path");
+	                        String root = getpath();
+	                        File file = new File(root + "/" + path);
+	                        if (file.exists()) {
+	                            file.delete();
+	                        }
+	                        return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+	                    }
+	                } catch (Throwable th) {
+	                    return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+	                }
+	            }
+	        }
+	        //default page: index.html
+	        return getRequestList.get(0).doResponse(session, "", null, null);
+	    }
+	}
+	
+	public DataReceiver getDataReceiver() {
+        return mDataReceiver;
     }
 
     public void setDataReceiver(DataReceiver receiver) {
         mDataReceiver = receiver;
     }
-
-    public DataReceiver getDataReceiver() {
-        return mDataReceiver;
-    }
-
-    public boolean isStarting() {
+	
+	public boolean isStarting() {
         return isStarted;
     }
-
+    
     public String getServerAddress() {
-        String ipAddress = LocalIPAddress.getLocalIPAddress(mContext);
+        String ipAddress = getLocalIPAddress(mContext);
         return "http://" + ipAddress + ":" + RemoteServer.serverPort + "/";
     }
 
     public String getLoadAddress() {
         return "http://127.0.0.1:" + RemoteServer.serverPort + "/";
-    }
-
-    public static Response createPlainTextResponse(IStatus status, String text) {
-        return Response.newFixedLengthResponse(status, MIME_PLAINTEXT, text);
-    }
-
-    public static Response createJSONResponse(IStatus status, String text) {
-        return Response.newFixedLengthResponse(status, "application/json", text);
     }
 
     String fileTime(long time, String fmt) {
@@ -507,7 +570,7 @@ public class RemoteServer extends NanoHTTPD {
         JsonObject info = new JsonObject();
         info.addProperty("remote", getServerAddress().replace("http://", "clan://"));
         info.addProperty("del", 0);
-        if (StringUtils.isEmpty(path)) {
+        if (StringUtils.isEmpty(path)) {      
             info.addProperty("parent", ".");
         } else {
             info.addProperty("parent", file.getParentFile().getAbsolutePath().replace(root + "/", "").replace(root, ""));
@@ -579,7 +642,25 @@ public class RemoteServer extends NanoHTTPD {
         }
         bos.close();
     }
-
+    
+    @Subscribe(threadMode = ThreadMode.ASYNC)
+    public void onReceiveEvent(LogEvent logEvent) {
+        if (logEvent != null) {
+            if (RemoteServer.this.isAlive()) {
+                synchronized (wsReference) {
+                    try {
+                        WebSocket wsSocket = wsReference.get();
+                        if (wsSocket != null && wsSocket.isOpen()) {
+                            wsSocket.send(logEvent.getText());
+                        }
+                    } catch (Throwable e) {
+                        com.github.tvbox.osc.util.LOG.e(e);
+                    }
+                }
+            }
+        }
+    }
+    
     private class DebugWebSocket extends WebSocket {
 
         public DebugWebSocket(IHTTPSession handshakeRequest) {
@@ -636,23 +717,39 @@ public class RemoteServer extends NanoHTTPD {
             }
         }
     }
+    
+    String getpath() {
+	    String datapath = "";
+	    if (Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED)) {
+	        //内部存储
+	        datapath = Environment.getExternalStorageDirectory().getAbsolutePath();
+	    } else {
+	        //支持U盘路径
+	        String[] strArr = new String[] {
+	            "/mnt/usb/", //mnt/usb/xxxx-xxxx
+	            "/storage/usb/", //storage/usb/xxxx-xxxx
+	            "/storage/", //storage/xxxx-xxxx
+	            "/mnt/" //mnt/xxxx-xxxx
+	        };
+	        for (int i = 0; i < strArr.length; i++) {
+	            File[] listFiles = new File(strArr[i]).listFiles();
+	            if (datapath == null || datapath == "") {
+	                if (listFiles != null && listFiles.length > 0) {
+	                    for (File file: listFiles) {
+	                        if (file.isDirectory() && file.getName().length() == 9 && file.getName().indexOf("-") == 4) {
+	                            datapath = file.getAbsolutePath();
+	                            break;
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	        if (datapath == null || datapath == "") {
+	            //系统存储，需给予读写权限
+	            datapath = "/data/local/tmp";
+	        }
+	    }
+	    return datapath;
+	}
 
-    @Subscribe(threadMode = ThreadMode.ASYNC)
-    public void onReceiveEvent(LogEvent logEvent) {
-        if(logEvent != null) {
-            if (RemoteServer.this.isAlive()){
-                synchronized (wsReference) {
-                    try{
-                        WebSocket wsSocket = wsReference.get();
-                        if(wsSocket != null && wsSocket.isOpen()){
-                            wsSocket.send(logEvent.getText());
-                        }
-                    } catch (Throwable e) {
-                        com.github.tvbox.osc.util.LOG.e(e);
-                    }
-                }
-            }
-
-        }
-    }
 }

@@ -40,6 +40,7 @@ public class App extends MultiDexApplication {
     private Activity homeActivity;
     private static P2PClass p;
     public static String burl;
+    private static String dashData;
 
     @Override
     public void onCreate() {
@@ -141,6 +142,13 @@ public class App extends MultiDexApplication {
         if (!Hawk.contains(key)) {
             Hawk.put(key, value);
         }
+    }
+
+    public void setDashData(String data) {
+        dashData = data;
+    }
+    public String getDashData() {
+        return dashData;
     }
 
 }
