@@ -50,16 +50,22 @@ android {
     productFlavors {
         armeabi_v7a {
             dimension "abi"
+            versionCode versionCodeNew
+            versionName versionNameNew
             //noinspection ChromeOsAbiSupport
             ndk { abiFilters "armeabi-v7a" }
         }
         arm64_v8a {
             dimension "abi"
+            versionCode versionCodeNew
+            versionName versionNameNew
             //noinspection ChromeOsAbiSupport
             ndk { abiFilters "arm64-v8a" }
         }
         quan {
             dimension "abi"
+            versionCode versionCodeNew
+            versionName versionNameNew
             //noinspection ChromeOsAbiSupport
             ndk { abiFilters "arm64-v8a", "armeabi-v7a" }
         }
@@ -89,9 +95,9 @@ android {
         release {
             signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
-            minifyEnabled true
-            shrinkResources true
-            zipAlignEnabled true
+            minifyEnabled false
+            shrinkResources false
+            zipAlignEnabled false
         }
     }
 
@@ -154,6 +160,7 @@ dependencies {
     annotationProcessor 'androidx.room:room-compiler:2.3.0'
     implementation 'androidx.room:room-runtime:2.3.0'
     implementation 'androidx.multidex:multidex:2.0.1'
+    implementation 'org.conscrypt:conscrypt-android:2.5.2'
     implementation 'com.squareup.okhttp3:okhttp:3.12.11'
     implementation 'com.squareup.okio:okio:2.6.0'
     implementation 'com.github.CymChad:BaseRecyclerViewAdapterHelper:2.9.45-androidx'
@@ -200,11 +207,11 @@ dependencies {
             exclude group: 'xpp3', module: 'xpp3'
         }
     }
-
+    implementation 'net.sourceforge.streamsupport:android-retrofuture:1.7.4'
     //implementation 'wang.harlon.quickjs:wrapper-android:0.20.2'
     //implementation 'com.annimon:stream:1.2.2'
     //奔溃信息提示
-    //implementation("com.simple:spiderman:1.1.6") {
-    //    exclude group: "androidx.appcompat"
-    //}
+    implementation("com.simple:spiderman:1.1.6") {
+        exclude group: "androidx.appcompat"
+    }
 }

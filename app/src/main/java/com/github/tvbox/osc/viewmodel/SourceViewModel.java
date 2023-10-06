@@ -126,11 +126,10 @@ public class SourceViewModel extends ViewModel {
                     String sortJson = null;
                     try {
                         sortJson = future.get(15, TimeUnit.SECONDS);
-                    } catch (TimeoutException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                         future.cancel(true);
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
+                        LOG.e(e);
                     } finally {
                         if (sortJson != null) {
                             AbsSortXml sortXml = sortJson(sortJson);
@@ -270,6 +269,7 @@ public class SourceViewModel extends ViewModel {
                         json(listResult, sp.categoryContent(sortData.id, page + "", true, sortData.filterSelect), homeSourceBean.getKey());
                     } catch (Throwable th) {
                         th.printStackTrace();
+                        LOG.e(th);
                     }
                 }
             });
@@ -376,12 +376,11 @@ public class SourceViewModel extends ViewModel {
                     String sortJson = null;
                     try {
                         sortJson = future.get(15, TimeUnit.SECONDS);
-                    } catch (TimeoutException e) {
+                    } catch (Exception e) {
                         e.printStackTrace();
                         future.cancel(true);
-                    } catch (InterruptedException | ExecutionException e) {
-                        e.printStackTrace();
-                    } finally {
+                        LOG.e(e);
+                    }  finally {
                         if (sortJson != null) {
                             AbsXml absXml = json(null, sortJson, sourceBean.getKey());
                             if (absXml != null && absXml.movie != null && absXml.movie.videoList != null) {
@@ -460,6 +459,7 @@ public class SourceViewModel extends ViewModel {
                         json(detailResult, sp.detailContent(ids), sourceBean.getKey());
                     } catch (Throwable th) {
                         th.printStackTrace();
+                        LOG.e(th);
                     }
                 }
             });
@@ -518,6 +518,7 @@ public class SourceViewModel extends ViewModel {
             } catch (Throwable th) {
                 th.printStackTrace();
                 json(searchResult, "", sourceBean.getKey());
+                LOG.e(th);
             }
         } else if (type == 0 || type == 1) {
             OkGo.<String>get(sourceBean.getApi())
@@ -601,6 +602,7 @@ public class SourceViewModel extends ViewModel {
                 json(quickSearchResult, sp.searchContent(wd, true), sourceBean.getKey());
             } catch (Throwable th) {
                 th.printStackTrace();
+                LOG.e(th);
             }
         } else if (type == 0 || type == 1) {
             OkGo.<String>get(sourceBean.getApi())
@@ -685,6 +687,7 @@ public class SourceViewModel extends ViewModel {
                     Spider sp = ApiConfig.get().getCSP(sourceBean);
                     try {
                         String json = sp.playerContent(playFlag, url, ApiConfig.get().getVipParseFlags());
+                        //LOG.e(json);
                         JSONObject result = new JSONObject(json);
                         result.put("key", url);
                         result.put("proKey", progressKey);
@@ -695,6 +698,7 @@ public class SourceViewModel extends ViewModel {
                     } catch (Throwable th) {
                         th.printStackTrace();
                         playResult.postValue(null);
+                        LOG.e(th);
                     }
                 }
             });
@@ -735,6 +739,7 @@ public class SourceViewModel extends ViewModel {
                                 } catch (Throwable th) {
                                     th.printStackTrace();
                                     playResult.postValue(null);
+                                    LOG.e(th);
                                 }
                             }
 
@@ -763,6 +768,7 @@ public class SourceViewModel extends ViewModel {
             } catch (Throwable th) {
                 th.printStackTrace();
                 playResult.postValue(null);
+                LOG.e(th);
             }
         } else if (type == 4) {
             String extend=sourceBean.getExt();
@@ -865,7 +871,7 @@ public class SourceViewModel extends ViewModel {
                     }
                 }
             } catch (Throwable th) {
-
+                LOG.e(th);
             }
             return data;
         } catch (Exception e) {
@@ -887,6 +893,7 @@ public class SourceViewModel extends ViewModel {
             }
             return data;
         } catch (Exception e) {
+            LOG.e(e);
             return null;
         }
     }
@@ -1026,6 +1033,7 @@ public class SourceViewModel extends ViewModel {
             } else if (result != null) {
                 result.postValue(null);
             }
+            LOG.e(e);
             return null;
         }
     }
@@ -1073,6 +1081,7 @@ public class SourceViewModel extends ViewModel {
             } else if (result != null) {
                 result.postValue(null);
             }
+            LOG.e(e);
             return null;
         }
     }

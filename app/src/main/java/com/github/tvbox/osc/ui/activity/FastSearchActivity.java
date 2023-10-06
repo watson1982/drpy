@@ -525,7 +525,7 @@ public class FastSearchActivity extends BaseActivity {
             if (searchExecutorService != null) {
                 searchExecutorService.shutdownNow();
                 searchExecutorService = null;
-                JsLoader.stopAll();
+                JsLoader.load();
             }
         } catch (Throwable th) {
             th.printStackTrace();

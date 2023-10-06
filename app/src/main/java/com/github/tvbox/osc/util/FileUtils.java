@@ -87,11 +87,19 @@ public class FileUtils {
 
     public static void setCacheByte(String name, byte[] data) {
         try {
-            writeSimple(Base64.encode(data, Base64.URL_SAFE), open("B_" + name));
+            writeSimple(byteMerger("//DRPY".getBytes(),Base64.encode(data, Base64.URL_SAFE)), open("B_" + name));
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
+
+    public static byte[] byteMerger(byte[] bt1, byte[] bt2){
+        byte[] bt3 = new byte[bt1.length+bt2.length];
+        System.arraycopy(bt1, 0, bt3, 0, bt1.length);
+        System.arraycopy(bt2, 0, bt3, bt1.length, bt2.length);
+        return bt3;
+    }
+
     public static String get(String str) {
         return get(str, null);
     }
@@ -117,7 +125,11 @@ public class FileUtils {
 
     public static String loadModule(String name) {
         try {
-            if (name.contains("similarity.js")) {
+            if (name.endsWith("ali.js")) {
+                name = "ali.js";
+            } else if (name.endsWith("ali_api.js")) {
+                name = "ali_api.js";
+            } else if (name.contains("similarity.js")) {
                 name = "similarity.js";
             } else if (name.contains("cat.js")) {
                 name = "cat.js";

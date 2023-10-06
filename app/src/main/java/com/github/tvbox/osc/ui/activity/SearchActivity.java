@@ -647,7 +647,7 @@ public class SearchActivity extends BaseActivity {
             if (sourceViewModel != null) {
                 sourceViewModel.shutdownNow();
                 sourceViewModel.destroyExecutor();
-                JsLoader.stopAll();
+                JsLoader.load();
             }
         } catch (Throwable th) {
             th.printStackTrace();

@@ -26,10 +26,10 @@ public class FunCall implements Callable<Object> {
     @Override
     public Object call() throws Exception {
         result = jsObject.getJSFunction(name).call(args);
-        if (result instanceof JSObject) {
-            JSFunction then = ((JSObject) result).getJSFunction("then");
-            if (then != null) then.call(jsCallFunction);
-        }
+        if (!(result instanceof JSObject)) return result;
+        JSObject promise = (JSObject) result;
+        JSFunction then = promise.getJSFunction("then");
+        if (then != null) then.call(jsCallFunction);
         return result;
     }
 

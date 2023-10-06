@@ -5,6 +5,7 @@ import android.app.Activity;
 import androidx.multidex.MultiDexApplication;
 
 import com.github.catvod.crawler.JsLoader;
+import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.callback.EmptyCallback;
 import com.github.tvbox.osc.callback.LoadingCallback;
 import com.github.tvbox.osc.data.AppDataManager;
@@ -25,6 +26,7 @@ import java.util.HashMap;
 
 import com.jieba_android.JiebaSegmenter;
 
+import com.simple.spiderman.SpiderMan;
 import com.whl.quickjs.android.QuickJSLoader;
 
 import me.jessyan.autosize.AutoSizeConfig;
@@ -46,7 +48,7 @@ public class App extends MultiDexApplication {
         super.onCreate();
         instance = this;
         //放在其他库初始化前
-        //SpiderMan.init(this).setTheme(R.style.SpiderManTheme_Dark);
+        SpiderMan.init(this).setTheme(R.style.SpiderManTheme_Dark);
 
         initParams();
         // takagen99 : Initialize Locale
@@ -133,7 +135,7 @@ public class App extends MultiDexApplication {
     @Override
     public void onTerminate() {
         super.onTerminate();
-        JsLoader.stopAll();
+        JsLoader.load();
         jianpian.finish();
     }
 

@@ -25,16 +25,18 @@ public class JsLoader {
     private static ConcurrentHashMap<String, Class<?>> classs = new ConcurrentHashMap<>();
 
     public static void load() {
-        stopAll();
+        for (Spider spider : spiders.values()){
+            spider.cancelByTag();
+            spider.destroy();
+        }
+        spiders.clear();
+        classs.clear();
     }
 
     public static void stopAll() {
         for (Spider spider : spiders.values()){
-            spider.destroy();
             spider.cancelByTag();
         }
-        spiders.clear();
-        classs.clear();
     }
 
     private boolean loadClassLoader(String jar, String key) {
@@ -128,6 +130,7 @@ public class JsLoader {
             return sp;
         } catch (Throwable th) {
             th.printStackTrace();
+            LOG.e("QuJS", th);
         }
         return new SpiderNull();
     }

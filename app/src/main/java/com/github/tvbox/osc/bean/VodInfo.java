@@ -1,5 +1,7 @@
 package com.github.tvbox.osc.bean;
 
+import android.text.TextUtils;
+
 import androidx.annotation.NonNull;
 
 import com.github.tvbox.osc.api.ApiConfig;
@@ -79,13 +81,17 @@ public class VodInfo implements Serializable {
                 if (urlInfo.beanList != null && urlInfo.beanList.size() > 0) {
                     List<VodSeries> seriesList = new ArrayList<>();
                     for (Movie.Video.UrlBean.UrlInfo.InfoBean infoBean : urlInfo.beanList) {
-                        seriesList.add(new VodSeries(infoBean.name.replace(name,""), infoBean.url));
+                        if(!TextUtils.isEmpty(name)) {
+                            seriesList.add(new VodSeries(infoBean.name.replace(name, ""), infoBean.url));
+                        } else {
+                            seriesList.add(new VodSeries(infoBean.name, infoBean.url));
+                        }
                     }
                     tempSeriesMap.put(urlInfo.flag, seriesList);
                     seriesFlags.add(new VodSeriesFlag(urlInfo.flag));
                 }
             }
-            SourceBean sb = ApiConfig.get().getSource(video.sourceKey);
+            /*SourceBean sb = ApiConfig.get().getSource(video.sourceKey);
             if (sb != null) { // ssp 不排序
                 // 优先展示m3u8
                 Collections.sort(seriesFlags, new Comparator<VodSeriesFlag>() {
@@ -100,7 +106,7 @@ public class VodInfo implements Serializable {
                         return 0;
                     }
                 });
-            }
+            }*/
             seriesMap = new LinkedHashMap<>();
             for (VodSeriesFlag flag : seriesFlags) {
                 seriesMap.put(flag.name, tempSeriesMap.get(flag.name));

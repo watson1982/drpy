@@ -166,13 +166,16 @@ public class AbsJson implements Serializable {
         }
         movie.recordcount = total;
         List<Movie.Video> videoList = new ArrayList<>();
-        for (AbsJsonVod vod : list) {
-            try {
-                videoList.add(vod.toXmlVideo());
-            } catch (Throwable th) {
-                movie.pagesize = 0;
+        if(list != null){
+            for (AbsJsonVod vod : list) {
+                try {
+                    videoList.add(vod.toXmlVideo());
+                } catch (Throwable th) {
+                    movie.pagesize = 0;
+                }
             }
         }
+
         movie.videoList = videoList;
         xml.movie = movie;
         return xml;

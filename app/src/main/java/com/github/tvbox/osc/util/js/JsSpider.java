@@ -1,6 +1,7 @@
 package com.github.tvbox.osc.util.js;
 
 import android.content.Context;
+import android.text.TextUtils;
 import android.util.Base64;
 
 import com.github.catvod.crawler.Spider;
@@ -30,6 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import java9.util.concurrent.CompletableFuture;
+
 public class JsSpider extends Spider {
 
     private final ExecutorService executor;
@@ -38,6 +41,7 @@ public class JsSpider extends Spider {
     private JSObject jsObject;
     private final String key;
     private final String api;
+    private boolean cat;
 
     public JsSpider(String key, String api, Class<?> cls) throws Exception {
         this.key = "J" + MD5.encode(key);
@@ -59,13 +63,23 @@ public class JsSpider extends Spider {
     }
 
     private Object call(String func, Object... args) throws Exception {
-        return executor.submit((FunCall.call(jsObject, func, args))).get();
+        //return executor.submit((FunCall.call(jsObject, func, args))).get();
+        return CompletableFuture.supplyAsync(() -> Async.run(jsObject, func, args), executor).join().get();
+    }
+
+    private JSObject cfg(String ext) {
+        JSObject cfg = ctx.createJSObject();
+        cfg.set("stype", 3);
+        cfg.set("skey", key);
+        if (Json.invalid(ext)) cfg.set("ext", ext);
+        else cfg.set("ext", (JSObject) ctx.parse(ext));
+        return cfg;
     }
 
     @Override
     public void init(Context context, String extend) throws Exception {
-        String ext = FileUtils.loadModule(extend);
-        call("init", Json.valid(ext) ? ctx.parse(ext) : ext);
+        if (cat) call("init", submit(() -> cfg(extend)).get());
+        else call("init", Json.valid(extend) ? ctx.parse(extend) : extend);
     }
 
     @Override
@@ -129,24 +143,71 @@ public class JsSpider extends Spider {
         });
     }
 
+    private static final String SPIDER_STRING_CODE = "import * as spider from '%s'\n\n" +
+            "if (!globalThis.__JS_SPIDER__) {\n" +
+            "    if (spider.__jsEvalReturn) {\n" +
+            "        globalThis.req = http\n" +
+            "        globalThis.__JS_SPIDER__ = spider.__jsEvalReturn()\n" +
+            "        globalThis.__JS_SPIDER__.is_cat = true\n" +
+            "    } else if (spider.default) {\n" +
+            "        globalThis.__JS_SPIDER__ = typeof spider.default === 'function' ? spider.default() : spider.default\n" +
+            "    }\n" +
+            "}";
     private void initializeJS() throws Exception {
         submit(() -> {
             if (ctx == null) createCtx();
             if (dex != null) createDex();
-            //FileUtils.setCacheByte(MD5.encode(api), ctx.compileModule(getContent(), api));
-            ctx.evaluateModule(getContent() + "\n\n;console.log(typeof(pdfl));", api);
+
+            String content = FileUtils.loadModule(api);
+            if(content.startsWith("//bb")){
+                cat = true;
+                byte[] b = Base64.decode(content.replace("//bb",""), 0);
+                //ctx.execute(byteFF(b), key + ".js");
+                //ctx.evaluateModule(String.format(SPIDER_STRING_CODE, key + ".js") + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                ctx.execute(byteFF(b), key + ".js","__jsEvalReturn");
+                ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");
+            } else {
+                String moduleExtName = "default";
+                if (content.contains("__jsEvalReturn") && !content.contains("export default")) {
+                    moduleExtName = "__jsEvalReturn";
+                    cat = true;
+                }
+                //ctx.evaluateModule(content, api);
+                //ctx.evaluateModule(String.format(SPIDER_STRING_CODE, api) + "globalThis." + key + " = __JS_SPIDER__;", "tv_box_root.js");
+                ctx.evaluateModule(content, api, moduleExtName);
+                ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");
+            }
             jsObject = (JSObject) ctx.get(ctx.getGlobalObject(), key);
             return null;
         }).get();
     }
 
+    public static byte[] byteFF(byte[] bytes) {
+        byte[] newBt = new byte[bytes.length - 4];
+        newBt[0] = 1;
+        System.arraycopy(bytes, 5, newBt, 1, bytes.length - 5);
+        return newBt;
+    }
+
     private void createCtx() {
         ctx = QuickJSContext.create();
-        ctx.setModuleLoader(new QuickJSContext.DefaultModuleLoader() {
+        ctx.setModuleLoader(new QuickJSContext.BytecodeModuleLoader() {
             @Override
-            public String getModuleStringCode(String moduleName) {
-                //FileUtils.setCacheByte(MD5.encode(moduleName), ctx.compileModule(FileUtils.loadModule(moduleName), moduleName));
-                return FileUtils.loadModule(moduleName);
+            public byte[] getModuleBytecode(String moduleName) {
+                String ss = FileUtils.loadModule(moduleName);
+                if(ss.startsWith("//DRPY")){
+                    return Base64.decode(ss.replace("//DRPY",""), Base64.URL_SAFE);
+                } else if(ss.startsWith("//bb")){
+                    byte[] b = Base64.decode(ss.replace("//bb",""), 0);
+                    return byteFF(b);
+                } else {
+                    /*if (moduleName.contains("cheerio.min.js")) {
+                        FileUtils.setCacheByte("cheerio.min", ctx.compileModule(ss, "cheerio.min.js"));
+                    } else if (moduleName.contains("crypto-js.js")) {
+                        FileUtils.setCacheByte("crypto-js", ctx.compileModule(ss, "crypto-js.js"));
+                    }*/
+                    return ctx.compileModule(ss, moduleName);
+                }
             }
 
             @Override
@@ -180,6 +241,7 @@ public class JsSpider extends Spider {
             if (classes.length >= 1) invokeMultiple(clz, obj);
         } catch (Throwable e) {
             e.printStackTrace();
+            LOG.e(e);
         }
     }
 
