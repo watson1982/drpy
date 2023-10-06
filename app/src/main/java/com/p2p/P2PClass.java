@@ -1,31 +1,82 @@
 package com.p2p;
 
 import java.io.File;
-import java.util.concurrent.Executors;
-
 
 public class P2PClass {
-    private static String TAG = "P2PClass";
-
+    private static final String TAG = "P2PClass";
     public static int port = 8087;
+    public String path;
 
-    public String path = null;
+    private final native void XGFilmCloseFile(long j);
 
+    private final native long XGFilmOpenFile(byte[] bArr);
+
+    private final native int XGFilmReadFile(long j, long j2, int i, byte[] bArr);
+
+    private final native int dosetupload(int i);
+
+    private final native void doxSetP2PPauseUpdate(int i);
+
+    private final native int doxadd(byte[] bArr);
+
+    private final native int doxcheck(byte[] bArr);
+
+    private final native int doxdel(byte[] bArr);
+
+    private final native int doxdelall();
+
+    private final native int doxdownload(byte[] bArr);
+
+    private final native int doxendhttpd();
+
+    private final native String doxgetVersion();
+
+    private final native String doxgethostbynamehook(String str);
+
+    private final native String doxgetlocalAddress();
+
+    private final native String doxgettaskstat(int i);
+
+    private final native int doxpause(byte[] bArr);
+
+    private final native int doxsave();
+
+    private final native int doxsetduration(int i);
+
+    private final native int doxstart(byte[] bArr);
+
+    /* JADX INFO: Access modifiers changed from: private */
+    public final native int doxstarthttpd(byte[] bArr, byte[] bArr2);
+
+    private final native int doxterminate();
+
+    private final native long getdownsize(int i);
+
+    private final native long getfilesize(int i);
+
+    private final native long getlocalfilesize(byte[] bArr);
+
+    private final native int getpercent();
+
+    private final native long getspeed(int i);
+
+    /* loaded from: /Users/junior/Downloads/爱佬版_V1.1_C2841_纯jsoup带缓存/classes2.dex */
     class init extends Thread {
-
-        String CardPath;
+        final String CardPath;
 
         init(String str) {
             this.CardPath = str;
         }
 
+        @Override // java.lang.Thread, java.lang.Runnable
         public void run() {
-            path = CardPath + "/jpali";
-            File file = new File(path);
+            P2PClass p2PClass = P2PClass.this;
+            p2PClass.path = this.CardPath + "/jpali";
+            File file = new File(P2PClass.this.path);
             if (!file.exists()) {
                 file.mkdirs();
             }
-            P2PClass.port = P2PClass.this.doxstarthttpd("TEST3E63BAAECDAA79BEAA91853490A69F08".getBytes(), CardPath.getBytes());
+            P2PClass.port = P2PClass.this.doxstarthttpd("TEST3E63BAAECDAA79BEAA91853490A69F08".getBytes(), this.CardPath.getBytes());
         }
     }
 
@@ -34,68 +85,14 @@ public class P2PClass {
     }
 
     public P2PClass(String str) {
-        path = str + "/jpali";
-        File file = new File(path);
+        this.path = null;
+        this.path = str + "/jpali";
+        File file = new File(this.path);
         if (!file.exists()) {
             file.mkdirs();
         }
         port = doxstarthttpd("TEST3E63BAAECDAA79BEAA91853490A69F08".getBytes(), str.getBytes());
-        //Executors.newCachedThreadPool().execute(new init(str));
     }
-
-
-    private native void XGFilmCloseFile(long j);
-
-    private native long XGFilmOpenFile(byte[] bArr);
-
-    private native int XGFilmReadFile(long j, long j2, int i, byte[] bArr);
-
-    private native int dosetupload(int i);
-
-    private native void doxSetP2PPauseUpdate(int i);
-
-    private native int doxadd(byte[] bArr);
-
-    private native int doxcheck(byte[] bArr);
-
-    private native int doxdel(byte[] bArr);
-
-    private native int doxdelall();
-
-    private native int doxdownload(byte[] bArr);
-
-    private native int doxendhttpd();
-
-    private native String doxgetVersion();
-
-    private native String doxgethostbynamehook(String str);
-
-    private native String doxgetlocalAddress();
-
-    private native String doxgettaskstat(int i);
-
-    private native int doxpause(byte[] bArr);
-
-    private native int doxsave();
-
-    private native int doxsetduration(int i);
-
-    private native int doxstart(byte[] bArr);
-
-    private native int doxstarthttpd(byte[] bArr, byte[] bArr2);
-
-    private native int doxterminate();
-
-    private native long getdownsize(int i);
-
-    private native long getfilesize(int i);
-
-    private native long getlocalfilesize(byte[] bArr);
-
-    private native int getpercent();
-
-    private native long getspeed(int i);
-
 
     public int P2Pdoxstart(byte[] bArr) {
         return doxstart(bArr);
@@ -193,7 +190,7 @@ public class P2PClass {
         doxSetP2PPauseUpdate(i);
     }
 
-    public String getTouPingUrl() {
+    public String getLocalAddress() {
         return doxgetlocalAddress();
     }
 
