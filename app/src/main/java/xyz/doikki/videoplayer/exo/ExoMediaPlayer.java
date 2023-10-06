@@ -1,38 +1,35 @@
 package xyz.doikki.videoplayer.exo;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.res.AssetFileDescriptor;
 import android.net.TrafficStats;
+import android.util.Log;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 
 import androidx.annotation.NonNull;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.PlaybackParameters;
+import androidx.media3.common.Player;
+import androidx.media3.common.Tracks;
+import androidx.media3.common.VideoSize;
+import androidx.media3.exoplayer.DefaultLoadControl;
+import androidx.media3.exoplayer.DefaultRenderersFactory;
+import androidx.media3.exoplayer.ExoPlayer;
+import androidx.media3.exoplayer.LoadControl;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.exoplayer.trackselection.TrackSelectionArray;
 
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LOG;
-import com.google.android.exoplayer2.DefaultLoadControl;
-import com.google.android.exoplayer2.DefaultRenderersFactory;
-import com.google.android.exoplayer2.ExoPlayer;
-import com.google.android.exoplayer2.LoadControl;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.PlaybackParameters;
-import com.google.android.exoplayer2.Player;
-
-import com.google.android.exoplayer2.Tracks;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-
-import com.google.android.exoplayer2.video.VideoSize;
-import com.google.common.collect.ImmutableList;
 import com.orhanobut.hawk.Hawk;
 
 import java.util.Map;
 
 import xyz.doikki.videoplayer.player.AbstractPlayer;
-
 
 public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
 
@@ -41,33 +38,40 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
     protected MediaSource mMediaSource;
     protected ExoMediaSourceHelper mMediaSourceHelper;
     protected ExoTrackNameProvider trackNameProvider;
+    protected TrackSelectionArray mTrackSelections;
     private PlaybackParameters mSpeedPlaybackParameters;
     private boolean mIsPreparing;
-    protected ImmutableList<Tracks.Group> groups;
+
     private LoadControl mLoadControl;
     private DefaultRenderersFactory mRenderersFactory;
     private DefaultTrackSelector mTrackSelector;
 
+    private int errorCode = -100;
+    private String path;
+    private Map<String, String> headers;
+    private long lastTotalRxBytes = 0;
+    private long lastTimeStamp = 0;
 
     public ExoMediaPlayer(Context context) {
         mAppContext = context.getApplicationContext();
         mMediaSourceHelper = ExoMediaSourceHelper.getInstance(context);
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     @Override
     public void initPlayer() {
         if (mRenderersFactory == null) {
             mRenderersFactory = new DefaultRenderersFactory(mAppContext);
         }
-        mRenderersFactory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_ON);
+        mRenderersFactory.setExtensionRendererMode(DefaultRenderersFactory.EXTENSION_RENDERER_MODE_PREFER);
         if (mTrackSelector == null) {
             mTrackSelector = new DefaultTrackSelector(mAppContext);
         }
         if (mLoadControl == null) {
-            mLoadControl =new DefaultLoadControl();
+            mLoadControl = new DefaultLoadControl();
         }
-        mTrackSelector.setParameters(mTrackSelector.getParameters().buildUpon().setTunnelingEnabled(Hawk.get(HawkConfig.EXO_TUNNELING, false)));
-        /*mMediaPlayer = new SimpleExoPlayer.Builder(
+        mTrackSelector.setParameters(mTrackSelector.getParameters().buildUpon().setPreferredTextLanguage("zh").setTunnelingEnabled(Hawk.get(HawkConfig.EXO_TUNNELING, false)));
+        /*mMediaPlayer = new ExoPlayer.Builder(
                 mAppContext,
                 mRenderersFactory,
                 mTrackSelector,
@@ -92,7 +96,10 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
 
     @Override
     public void setDataSource(String path, Map<String, String> headers) {
+        this.path = path;
+        this.headers = headers;
         mMediaSource = mMediaSourceHelper.getMediaSource(path, headers);
+        errorCode = -1;
     }
 
     @Override
@@ -121,6 +128,7 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
         mMediaPlayer.stop();
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     @Override
     public void prepareAsync() {
         if (mMediaPlayer == null)
@@ -233,15 +241,6 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
     }
 
     @Override
-    public void setSpeed(float speed) {
-        PlaybackParameters playbackParameters = new PlaybackParameters(speed);
-        mSpeedPlaybackParameters = playbackParameters;
-        if (mMediaPlayer != null) {
-            mMediaPlayer.setPlaybackParameters(playbackParameters);
-        }
-    }
-
-    @Override
     public float getSpeed() {
         if (mSpeedPlaybackParameters != null) {
             return mSpeedPlaybackParameters.speed;
@@ -249,9 +248,14 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
         return 1f;
     }
 
-    private long lastTotalRxBytes = 0;
-
-    private long lastTimeStamp = 0;
+    @Override
+    public void setSpeed(float speed) {
+        PlaybackParameters playbackParameters = new PlaybackParameters(speed);
+        mSpeedPlaybackParameters = playbackParameters;
+        if (mMediaPlayer != null) {
+            mMediaPlayer.setPlaybackParameters(playbackParameters);
+        }
+    }
 
     private boolean unsupported() {
         return TrafficStats.getUidRxBytes(App.getInstance().getApplicationInfo().uid) == TrafficStats.UNSUPPORTED;
@@ -273,15 +277,14 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
         lastTimeStamp = time;
         //当前总接收量存到上次接收总量这个变量，供下次计算用
         lastTotalRxBytes = total;
-        LOG.e("TcpSpeed",speed * 1024 + "");
+        LOG.e("TcpSpeed", speed * 1024 + "");
         return speed * 1024;
     }
 
     @Override
-    public void onTracksChanged(@NonNull Tracks tracks) {
+    public void onTracksChanged(Tracks tracks) {
         if (trackNameProvider == null)
             trackNameProvider = new ExoTrackNameProvider(mAppContext.getResources());
-        groups = tracks.getGroups();
     }
 
     @Override
@@ -312,8 +315,17 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
 
     @Override
     public void onPlayerError(@NonNull PlaybackException error) {
-        if (mPlayerEventListener != null) {
-            mPlayerEventListener.onError();
+        errorCode = error.errorCode;
+        Log.e("tag--", "" + error.errorCode);
+        if (path != null) {
+            setDataSource(path, headers);
+            path = null;
+            prepareAsync();
+            start();
+        } else {
+            if (mPlayerEventListener != null) {
+                mPlayerEventListener.onError();
+            }
         }
     }
 
@@ -326,6 +338,5 @@ public class ExoMediaPlayer extends AbstractPlayer implements Player.Listener {
             }
         }
     }
-
 
 }

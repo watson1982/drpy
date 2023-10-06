@@ -13,29 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.android.exoplayer2.ext.okhttp;
+package com.google.androidx.media3.exoplayer.ext.okhttp;
 
-import static com.google.android.exoplayer2.upstream.HttpUtil.buildRangeRequestHeader;
-import static com.google.android.exoplayer2.util.Util.castNonNull;
+
+import static androidx.media3.common.util.Util.castNonNull;
+import static androidx.media3.datasource.HttpUtil.buildRangeRequestHeader;
 import static java.lang.Math.min;
 
 import android.net.Uri;
 
 import androidx.annotation.Nullable;
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.ExoPlayerLibraryInfo;
-import com.google.android.exoplayer2.PlaybackException;
-import com.google.android.exoplayer2.upstream.BaseDataSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.DataSourceException;
-import com.google.android.exoplayer2.upstream.DataSpec;
-import com.google.android.exoplayer2.upstream.HttpDataSource;
-import com.google.android.exoplayer2.upstream.HttpUtil;
-import com.google.android.exoplayer2.upstream.TransferListener;
-import com.google.android.exoplayer2.util.Assertions;
-import com.google.android.exoplayer2.util.Util;
+import androidx.media3.common.C;
+import androidx.media3.common.MediaLibraryInfo;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.util.Assertions;
+import androidx.media3.common.util.Util;
+import androidx.media3.datasource.BaseDataSource;
+import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.DataSourceException;
+import androidx.media3.datasource.DataSpec;
+import androidx.media3.datasource.HttpDataSource;
+import androidx.media3.datasource.HttpUtil;
+import androidx.media3.datasource.TransferListener;
+
 import com.google.common.base.Predicate;
 import com.google.common.net.HttpHeaders;
+import com.google.common.util.concurrent.SettableFuture;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InterruptedIOException;
@@ -43,8 +47,11 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+
 import okhttp3.CacheControl;
 import okhttp3.Call;
+import okhttp3.Callback;
 import okhttp3.HttpUrl;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -64,7 +71,7 @@ import okhttp3.ResponseBody;
 public class OkHttpDataSource extends BaseDataSource implements HttpDataSource {
 
     static {
-        ExoPlayerLibraryInfo.registerModule("goog.exo.okhttp");
+        MediaLibraryInfo.registerModule("media3.datasource.okhttp");
     }
 
     /** {@link DataSource.Factory} for {@link OkHttpDataSource} instances. */
@@ -233,6 +240,8 @@ public class OkHttpDataSource extends BaseDataSource implements HttpDataSource {
         this.contentTypePredicate = contentTypePredicate;
     }
 
+
+
     @Override
     @Nullable
     public Uri getUri() {
@@ -277,8 +286,9 @@ public class OkHttpDataSource extends BaseDataSource implements HttpDataSource {
         Request request = makeRequest(dataSpec);
         Response response;
         ResponseBody responseBody;
+        Call call = callFactory.newCall(request);
         try {
-            this.response = callFactory.newCall(request).execute();
+            this.response = executeCall(call);
             response = this.response;
             responseBody = Assertions.checkNotNull(response.body());
             responseByteStream = responseBody.byteStream();
@@ -286,13 +296,8 @@ public class OkHttpDataSource extends BaseDataSource implements HttpDataSource {
             throw HttpDataSourceException.createForIOException(
                     e, dataSpec, HttpDataSourceException.TYPE_OPEN);
         }
-
+    
         int responseCode = response.code();
-        if (responseCode == 403 || responseCode == 404 || responseCode == 500){
-            opened = true;
-            transferStarted(dataSpec);
-            return 0;
-        }
 
         // Check for a valid response code.
         if (!response.isSuccessful()) {
@@ -428,6 +433,35 @@ public class OkHttpDataSource extends BaseDataSource implements HttpDataSource {
         builder.method(dataSpec.getHttpMethodString(), requestBody);
         return builder.build();
     }
+    
+    /**
+   * This method is an interrupt safe replacement of OkHttp Call.execute() which can get in bad
+   * states if interrupted while writing to the shared connection socket.
+   */
+  private Response executeCall(Call call) throws IOException {
+    SettableFuture<Response> future = SettableFuture.create();
+    call.enqueue(
+        new Callback() {
+          @Override
+          public void onFailure(Call call, IOException e) {
+            future.setException(e);
+          }
+
+          @Override
+          public void onResponse(Call call, Response response) {
+            future.set(response);
+          }
+        });
+
+    try {
+      return future.get();
+    } catch (InterruptedException e) {
+      call.cancel();
+      throw new InterruptedIOException();
+    } catch (ExecutionException ee) {
+      throw new IOException(ee);
+    }
+  }
 
     /**
      * Attempts to skip the specified number of bytes in full.

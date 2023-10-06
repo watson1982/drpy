@@ -1,26 +1,34 @@
 package xyz.doikki.videoplayer.exo;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.MediaItem;
-import com.google.android.exoplayer2.database.ExoDatabaseProvider;
-
-import com.google.android.exoplayer2.ext.okhttp.OkHttpDataSource;
-import com.google.android.exoplayer2.ext.rtmp.RtmpDataSourceFactory;
-import com.google.android.exoplayer2.source.MediaSource;
-import com.google.android.exoplayer2.source.ProgressiveMediaSource;
-import com.google.android.exoplayer2.source.dash.DashMediaSource;
-import com.google.android.exoplayer2.source.hls.HlsMediaSource;
-import com.google.android.exoplayer2.source.rtsp.RtspMediaSource;
-import com.google.android.exoplayer2.upstream.DataSource;
-import com.google.android.exoplayer2.upstream.cache.Cache;
-import com.google.android.exoplayer2.upstream.cache.CacheDataSource;
-import com.google.android.exoplayer2.upstream.cache.LeastRecentlyUsedCacheEvictor;
-import com.google.android.exoplayer2.upstream.cache.SimpleCache;
-import com.google.android.exoplayer2.util.Util;
+import androidx.media3.common.C;
+import androidx.media3.common.MediaItem;
+import androidx.media3.common.MimeTypes;
+import androidx.media3.common.PlaybackException;
+import androidx.media3.common.util.Util;
+import androidx.media3.database.StandaloneDatabaseProvider;
+import androidx.media3.datasource.DataSource;
+import androidx.media3.datasource.DefaultDataSource;
+import androidx.media3.datasource.cache.Cache;
+import androidx.media3.datasource.cache.CacheDataSource;
+import androidx.media3.datasource.cache.LeastRecentlyUsedCacheEvictor;
+import androidx.media3.datasource.cache.SimpleCache;
+import androidx.media3.datasource.rtmp.RtmpDataSource;
+import androidx.media3.exoplayer.dash.DashMediaSource;
+import androidx.media3.exoplayer.hls.HlsMediaSource;
+import androidx.media3.exoplayer.rtsp.RtspMediaSource;
+import androidx.media3.exoplayer.source.DefaultMediaSourceFactory;
+import androidx.media3.exoplayer.source.MediaSource;
+import androidx.media3.exoplayer.source.ProgressiveMediaSource;
+import androidx.media3.extractor.DefaultExtractorsFactory;
+import androidx.media3.extractor.ExtractorsFactory;
+import androidx.media3.extractor.ts.DefaultTsPayloadReaderFactory;
+import androidx.media3.extractor.ts.TsExtractor;
+import com.google.androidx.media3.exoplayer.ext.okhttp.OkHttpDataSource;
 
 import java.io.File;
 import java.lang.reflect.Field;
@@ -38,6 +46,7 @@ public final class ExoMediaSourceHelper {
     private OkHttpClient mOkClient = null;
     private Cache mCache;
 
+    @SuppressLint("UnsafeOptInUsageError")
     private ExoMediaSourceHelper(Context context) {
         mAppContext = context.getApplicationContext();
         mUserAgent = Util.getUserAgent(mAppContext, mAppContext.getApplicationInfo().name);
@@ -52,6 +61,19 @@ public final class ExoMediaSourceHelper {
             }
         }
         return sInstance;
+    }
+
+    private static MediaItem getMediaItem(String uri, int errorCode) {
+        MediaItem.Builder builder = new MediaItem.Builder().setUri(Uri.parse(uri.trim().replace("\\", "")));
+        if (errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED)
+            builder.setMimeType(MimeTypes.APPLICATION_M3U8);
+        return builder.build();
+    }
+
+    @SuppressLint("UnsafeOptInUsageError")
+    private static synchronized ExtractorsFactory getExtractorsFactory() {
+        return new DefaultExtractorsFactory().setTsExtractorFlags(DefaultTsPayloadReaderFactory.FLAG_ENABLE_HDMV_DTS_AUDIO_STREAMS).setTsExtractorTimestampSearchBytes(TsExtractor.DEFAULT_TIMESTAMP_SEARCH_BYTES * 3);
+
     }
 
     public void setOkClient(OkHttpClient client) {
@@ -71,9 +93,14 @@ public final class ExoMediaSourceHelper {
     }
 
     public MediaSource getMediaSource(String uri, Map<String, String> headers, boolean isCache) {
+        return getMediaSource(uri, headers, isCache, -1);
+    }
+
+    @SuppressLint("UnsafeOptInUsageError")
+    public MediaSource getMediaSource(String uri, Map<String, String> headers, boolean isCache, int errorCode) {
         Uri contentUri = Uri.parse(uri);
         if ("rtmp".equals(contentUri.getScheme())) {
-            return new ProgressiveMediaSource.Factory(new RtmpDataSourceFactory(null))
+            return new ProgressiveMediaSource.Factory(new RtmpDataSource.Factory())
                     .createMediaSource(MediaItem.fromUri(contentUri));
         } else if ("rtsp".equals(contentUri.getScheme())) {
             return new RtspMediaSource.Factory().createMediaSource(MediaItem.fromUri(contentUri));
@@ -83,10 +110,15 @@ public final class ExoMediaSourceHelper {
         if (isCache) {
             factory = getCacheDataSourceFactory();
         } else {
-            factory = getHttpDataSourceFactory();
+            factory = getDataSourceFactory();
         }
         if (mHttpDataSourceFactory != null) {
             setHeaders(headers);
+        }
+        if (errorCode == PlaybackException.ERROR_CODE_PARSING_CONTAINER_UNSUPPORTED) {
+            MediaItem.Builder builder = new MediaItem.Builder().setUri(uri);
+            builder.setMimeType(MimeTypes.APPLICATION_M3U8);
+            return new DefaultMediaSourceFactory(getDataSourceFactory(), getExtractorsFactory()).createMediaSource(getMediaItem(uri, errorCode));
         }
         switch (contentType) {
             case C.TYPE_DASH:
@@ -95,18 +127,18 @@ public final class ExoMediaSourceHelper {
                 return new HlsMediaSource.Factory(mHttpDataSourceFactory)
                         .setAllowChunklessPreparation(true)
                         .setExtractorFactory(new MyHlsExtractorFactory())
-                        //.setPlaylistTrackerFactory(MyHlsPlaylistTracker.FACTORY)
                         .createMediaSource(MediaItem.fromUri(contentUri));
-                //return new HlsMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(contentUri));
+            //return new HlsMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(contentUri));
             default:
             case C.TYPE_OTHER:
                 return new ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(contentUri));
         }
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private int inferContentType(String fileName) {
         fileName = fileName.toLowerCase();
-        if (fileName.contains("mpd")) {
+        if (fileName.contains(".mpd") || fileName.contains("type=mpd")) {
             return C.TYPE_DASH;
         } else if (fileName.contains("m3u8")) {
             return C.TYPE_HLS;
@@ -115,21 +147,32 @@ public final class ExoMediaSourceHelper {
         }
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private DataSource.Factory getCacheDataSourceFactory() {
         if (mCache == null) {
             mCache = newCache();
         }
         return new CacheDataSource.Factory()
                 .setCache(mCache)
-                .setUpstreamDataSourceFactory(getHttpDataSourceFactory())
+                .setUpstreamDataSourceFactory(getDataSourceFactory())
                 .setFlags(CacheDataSource.FLAG_IGNORE_CACHE_ON_ERROR);
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private Cache newCache() {
         return new SimpleCache(
                 new File(mAppContext.getExternalCacheDir(), "exo-video-cache"),//缓存目录
                 new LeastRecentlyUsedCacheEvictor(512 * 1024 * 1024),//缓存大小，默认512M，使用LRU算法实现
-                new ExoDatabaseProvider(mAppContext));
+                new StandaloneDatabaseProvider(mAppContext));
+    }
+
+    /**
+     * Returns a new DataSource factory.
+     *
+     * @return A new DataSource factory.
+     */
+    private DataSource.Factory getDataSourceFactory() {
+        return new DefaultDataSource.Factory(mAppContext, getHttpDataSourceFactory());
     }
 
     /**
@@ -137,14 +180,17 @@ public final class ExoMediaSourceHelper {
      *
      * @return A new HttpDataSource factory.
      */
+    @SuppressLint("UnsafeOptInUsageError")
     private DataSource.Factory getHttpDataSourceFactory() {
         if (mHttpDataSourceFactory == null) {
             mHttpDataSourceFactory = new OkHttpDataSource.Factory(mOkClient)
-                    .setUserAgent(mUserAgent);
+                    .setUserAgent(mUserAgent)/*
+                    .setAllowCrossProtocolRedirects(true)*/;
         }
         return mHttpDataSourceFactory;
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private void setHeaders(Map<String, String> headers) {
         if (headers != null && headers.size() > 0) {
             //如果发现用户通过header传递了UA，则强行将HttpDataSourceFactory里面的userAgent字段替换成用户的

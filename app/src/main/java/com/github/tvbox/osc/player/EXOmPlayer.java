@@ -1,22 +1,19 @@
 package com.github.tvbox.osc.player;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 
 import androidx.annotation.Nullable;
+import androidx.media3.common.C;
+import androidx.media3.common.Format;
+import androidx.media3.common.MimeTypes;
+import androidx.media3.common.Player;
+import androidx.media3.common.TrackGroup;
+import androidx.media3.common.Tracks;
+import androidx.media3.exoplayer.source.TrackGroupArray;
+import androidx.media3.exoplayer.trackselection.DefaultTrackSelector;
+import androidx.media3.exoplayer.trackselection.MappingTrackSelector;
 
-import com.google.android.exoplayer2.C;
-import com.google.android.exoplayer2.Format;
-import com.google.android.exoplayer2.Player;
-import com.google.android.exoplayer2.Tracks;
-import com.google.android.exoplayer2.source.TrackGroup;
-import com.google.android.exoplayer2.source.TrackGroupArray;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.ParametersBuilder;
-import com.google.android.exoplayer2.trackselection.DefaultTrackSelector.SelectionOverride;
-import com.google.android.exoplayer2.trackselection.MappingTrackSelector.MappedTrackInfo;
-import com.google.android.exoplayer2.trackselection.TrackSelection;
-import com.google.android.exoplayer2.trackselection.TrackSelectionArray;
-import com.google.android.exoplayer2.util.MimeTypes;
 import com.github.tvbox.osc.util.StringUtils;
 
 import xyz.doikki.videoplayer.exo.ExoMediaPlayer;
@@ -29,9 +26,11 @@ public class EXOmPlayer extends ExoMediaPlayer {
         super(context);
     }
 
+
+    @SuppressLint("UnsafeOptInUsageError")
     public TrackInfo getTrackInfo() {
         TrackInfo data = new TrackInfo();
-        MappedTrackInfo trackInfo = getTrackSelector().getCurrentMappedTrackInfo();
+        MappingTrackSelector.MappedTrackInfo trackInfo = getTrackSelector().getCurrentMappedTrackInfo();
         if (trackInfo != null) {
             getExoSelectedTrack();
             for (int groupArrayIndex = 0; groupArrayIndex < trackInfo.getRendererCount(); groupArrayIndex++) {
@@ -68,10 +67,11 @@ public class EXOmPlayer extends ExoMediaPlayer {
         return data;
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     private void getExoSelectedTrack() {
         audioId = "";
         subtitleId = "";
-        for (Tracks.Group group : groups) {
+        for (Tracks.Group group : mMediaPlayer.getCurrentTracks().getGroups()) {
             for (int trackIndex = 0; trackIndex < group.length; trackIndex++) {
                 Format format = group.getTrackFormat(trackIndex);
                 if (MimeTypes.isAudio(format.sampleMimeType)) {
@@ -84,8 +84,9 @@ public class EXOmPlayer extends ExoMediaPlayer {
         }
     }
 
+    @SuppressLint("UnsafeOptInUsageError")
     public void selectExoTrack(@Nullable TrackInfoBean videoTrackBean) {
-        MappedTrackInfo trackInfo = getTrackSelector().getCurrentMappedTrackInfo();
+        MappingTrackSelector.MappedTrackInfo trackInfo = getTrackSelector().getCurrentMappedTrackInfo();
         if (trackInfo != null) {
             if (videoTrackBean == null) {
                 for (int renderIndex = 0; renderIndex < trackInfo.getRendererCount(); renderIndex++) {
@@ -98,7 +99,7 @@ public class EXOmPlayer extends ExoMediaPlayer {
                 }
             } else {
                 TrackGroupArray trackGroupArray = trackInfo.getTrackGroups(videoTrackBean.renderId);
-                SelectionOverride override = new SelectionOverride(videoTrackBean.trackGroupId, videoTrackBean.trackId);
+                @SuppressLint("UnsafeOptInUsageError") DefaultTrackSelector.SelectionOverride override = new DefaultTrackSelector.SelectionOverride(videoTrackBean.trackGroupId, videoTrackBean.trackId);
                 DefaultTrackSelector.Parameters.Builder parametersBuilder = getTrackSelector().buildUponParameters();
                 parametersBuilder.setRendererDisabled(videoTrackBean.renderId, false);
                 parametersBuilder.setSelectionOverride(videoTrackBean.renderId, trackGroupArray, override);
@@ -111,5 +112,4 @@ public class EXOmPlayer extends ExoMediaPlayer {
     public void setOnTimedTextListener(Player.Listener listener) {
         mMediaPlayer.addListener(listener);
     }
-
 }
