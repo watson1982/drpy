@@ -143,4 +143,11 @@ public class App extends MultiDexApplication {
         }
     }
 
+    public void setDashData(String data) {
+        dashData = data;
+    }
+    public String getDashData() {
+        return dashData;
+    }
+
 }
