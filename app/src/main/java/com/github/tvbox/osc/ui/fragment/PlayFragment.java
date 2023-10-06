@@ -75,8 +75,8 @@ import com.github.tvbox.osc.util.XWalkUtils;
 import com.github.tvbox.osc.util.js.jianpian;
 import com.github.tvbox.osc.util.thunder.Thunder;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
-import androidx.media3.common.Player;
-import androidx.media3.common.text.Cue;
+import com.google.android.exoplayer2.Player;
+import com.google.android.exoplayer2.text.Cue;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.callback.AbsCallback;
 import com.lzy.okgo.model.HttpHeaders;
@@ -296,6 +296,7 @@ public class PlayFragment extends BaseLazyFragment {
                 searchSubtitleDialog.setSubtitleLoader(new SearchSubtitleDialog.SubtitleLoader() {
                     @Override
                     public void loadSubtitle(SubtitleBean subtitle) {
+                    	if (!isAdded()) return;
                         requireActivity().runOnUiThread(new Runnable() {
                             @Override
                             public void run() {
@@ -505,6 +506,7 @@ public class PlayFragment extends BaseLazyFragment {
     }
 
     void setTip(String msg, boolean loading, boolean err) {
+    	if (!isAdded()) return;
         requireActivity().runOnUiThread(new Runnable() { //影魔
             @Override
             public void run() {
@@ -524,6 +526,7 @@ public class PlayFragment extends BaseLazyFragment {
 
     void errorWithRetry(String err, boolean finish) {
         if (!autoRetry()) {
+        	if (!isAdded()) return;
             requireActivity().runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -538,7 +541,7 @@ public class PlayFragment extends BaseLazyFragment {
     }
 
     void playUrl(String url, HashMap<String, String> headers) {
-
+    	if (!isAdded()) return;
         requireActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -1148,6 +1151,7 @@ public class PlayFragment extends BaseLazyFragment {
                             }
                         }
                         if (rs.has("jxFrom")) {
+                        	if (!isAdded()) return;
                             requireActivity().runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -1195,6 +1199,7 @@ public class PlayFragment extends BaseLazyFragment {
                             //if(StringUtils.isEmpty(webUserAgent)){
                             //    webUserAgent = UA.random();
                             //}
+                            if (!isAdded()) return;
                             requireActivity().runOnUiThread(new Runnable() {
                                 @Override
                                 public void run() {
@@ -1224,6 +1229,7 @@ public class PlayFragment extends BaseLazyFragment {
                                 }
                             }
                             if (rs.has("jxFrom")) {
+                            	if (!isAdded()) return;
                                 requireActivity().runOnUiThread(new Runnable() {
                                     @Override
                                     public void run() {
@@ -1292,6 +1298,7 @@ public class PlayFragment extends BaseLazyFragment {
     }
 
     void loadUrl(String url) {
+    	if (!isAdded()) return;
         requireActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -1325,6 +1332,7 @@ public class PlayFragment extends BaseLazyFragment {
     }
 
     void stopLoadWebView(boolean destroy) {
+    	if (!isAdded()) return;
         requireActivity().runOnUiThread(new Runnable() {
             @Override
             public void run() {
@@ -1413,6 +1421,7 @@ public class PlayFragment extends BaseLazyFragment {
         webView.setFocusableInTouchMode(false);
         webView.clearFocus();
         webView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+        if (!isAdded()) return;
         requireActivity().addContentView(webView, layoutParams);
         /* 添加webView配置 */
         final WebSettings settings = webView.getSettings();
@@ -1599,6 +1608,7 @@ public class PlayFragment extends BaseLazyFragment {
         webView.setFocusableInTouchMode(false);
         webView.clearFocus();
         webView.setOverScrollMode(View.OVER_SCROLL_ALWAYS);
+        if (!isAdded()) return;
         requireActivity().addContentView(webView, layoutParams);
         /* 添加webView配置 */
         final XWalkSettings settings = webView.getSettings();
