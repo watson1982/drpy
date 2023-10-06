@@ -1018,10 +1018,9 @@ public class PlayActivity extends BaseActivity {
                     setTip(info, true, false);
                 }
             }
-
+            
             @Override
-            public void list(String playList) {
-            }
+            public void list(Map < Integer, String > urlMap) {}
 
             @Override
             public void play(String url) {
@@ -1833,5 +1832,4 @@ public class PlayActivity extends BaseActivity {
             callback.onReceiveValue(true);
         }
     }
-
 }
