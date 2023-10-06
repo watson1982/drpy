@@ -62,7 +62,6 @@ import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
-import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -682,7 +681,7 @@ public class LivePlayActivity extends BaseActivity {
             String savedEpgKey = channel_Name.getChannelName() + "_" + epgDateAdapter.getItem(epgDateAdapter.getSelectedIndex()).getDatePresented();
             if (hsEpg.containsKey(savedEpgKey)) {
                 String[] epgInfo = EpgUtil.getEpgInfo(channel_Name.getChannelName());
-                getTvLogo(channel_Name.getChannelName(), epgInfo == null ? null : epgInfo[0]);
+                //getTvLogo(channel_Name.getChannelName(), epgInfo == null ? null : epgInfo[0]);
                 ArrayList arrayList = (ArrayList) hsEpg.get(savedEpgKey);
                 if (arrayList != null && arrayList.size() > 0) {
                     Date date = new Date();
@@ -721,10 +720,10 @@ public class LivePlayActivity extends BaseActivity {
     private List<Epginfo> epgdata = new ArrayList<>();
 
     // Get Channel Logo
-    private void getTvLogo(String channelName, String logoUrl) {
+ //   private void getTvLogo(String channelName, String logoUrl) {
 //        Toast.makeText(App.getInstance(), logoUrl, Toast.LENGTH_SHORT).show();
-        Picasso.get().load(logoUrl).placeholder(R.drawable.img_logo_placeholder).into(tv_logo);
-    }
+  //      Picasso.get().load(logoUrl).placeholder(R.drawable.img_logo_placeholder).into(tv_logo);
+ //   }
 
     public void getEpg(Date date) {
 
@@ -733,7 +732,7 @@ public class LivePlayActivity extends BaseActivity {
         timeFormat.setTimeZone(TimeZone.getTimeZone("GMT+8:00"));
         String[] epgInfo = EpgUtil.getEpgInfo(channelName);
         String epgTagName = channelName;
-        getTvLogo(channelName, epgInfo == null ? null : epgInfo[0]);
+       // getTvLogo(channelName, epgInfo == null ? null : epgInfo[0]);
         if (epgInfo != null && !epgInfo[1].isEmpty()) {
             epgTagName = epgInfo[1];
         }
