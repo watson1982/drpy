@@ -62,7 +62,6 @@ import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
-import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -721,10 +720,10 @@ public class LivePlayActivity extends BaseActivity {
     private List<Epginfo> epgdata = new ArrayList<>();
 
     // Get Channel Logo
-    private void getTvLogo(String channelName, String logoUrl) {
+ //   private void getTvLogo(String channelName, String logoUrl) {
 //        Toast.makeText(App.getInstance(), logoUrl, Toast.LENGTH_SHORT).show();
-        Picasso.get().load(logoUrl).placeholder(R.drawable.img_logo_placeholder).into(tv_logo);
-    }
+  //      Picasso.get().load(logoUrl).placeholder(R.drawable.img_logo_placeholder).into(tv_logo);
+ //   }
 
     public void getEpg(Date date) {
 
