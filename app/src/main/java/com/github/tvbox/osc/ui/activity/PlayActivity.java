@@ -1018,8 +1018,7 @@ public class PlayActivity extends BaseActivity {
                     setTip(info, true, false);
                 }
             }
-
-            @Override
+            
             public void list(String playList) {
             }
 
