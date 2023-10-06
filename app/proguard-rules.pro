@@ -3,15 +3,14 @@
 # 对于一些基本指令的添加
 #
 #############################################
--optimizationpasses 5                                       #指定代码压缩级别
--dontusemixedcaseclassnames                                 #混淆时不会产生形形色色的类名
--dontskipnonpubliclibraryclasses                            #指定不忽略非公共类库
--dontpreverify                                              #不预校验，如果需要预校验，是-dontoptimize
--ignorewarnings                                             #屏蔽警告
--verbose                                                    #混淆时记录日志
-
-#-printmapping proguardMapping.txt
--optimizations !code/simplification/cast,!field/*,!class/merging/*    #优化
+-optimizationpasses 5
+-dontusemixedcaseclassnames
+-dontskipnonpubliclibraryclasses
+-dontskipnonpubliclibraryclassmembers
+-dontpreverify
+-verbose
+-printmapping proguardMapping.txt
+-optimizations !code/simplification/cast,!field/*,!class/merging/*
 -keepattributes *Annotation*,InnerClasses
 -keepattributes EnclosingMethod, InnerClasses
 -keepattributes *Annotation*
@@ -19,15 +18,11 @@
 -keepattributes LineNumberTable
 -renamesourcefileattribute SourceFile
 
--obfuscationdictionary dictoO0.txt #自定义混淆字符
--classobfuscationdictionary dictoO0.txt
--packageobfuscationdictionary dictoO0.txt
-
 # 重新包装所有重命名的包并放在给定的单一包中
--flattenpackagehierarchy
+-flattenpackagehierarchy androidx.base
 
 # 将包里的类混淆成n个再重新打包到一个统一的package中  会覆盖flattenpackagehierarchy选项
--repackageclasses
+-repackageclasses androidx.base
 
 # 把混淆类中的方法名也混淆了
 -useuniqueclassmembernames
@@ -40,13 +35,14 @@
 # 保留我们使用的四大组件，自定义的Application等等这些类不被混淆
 # 因为这些子类都有可能被外部调用
 -keep public class * extends android.app.Activity
--keep public class * extends android.app.Application
+-keep public class * extends android.app.Application.**
 -keep public class * extends android.app.Service
 -keep public class * extends android.content.BroadcastReceiver
 -keep public class * extends android.content.ContentProvider
 -keep public class * extends android.app.backup.BackupAgentHelper
 -keep public class * extends android.preference.Preference
 -keep public class * extends android.view.View
+-keep public class com.android.vending.licensing.ILicensingService.**
 
 # 保留support下的所有类及其内部类
 -keep class android.support.** {*;}
@@ -62,6 +58,8 @@
 -keep class androidx.** { *; }
 -keep interface androidx.** { *; }
 #-keep public class * extends androidx.**
+
+-keep class org.xmlpull.v1.** {*;}
 
 # 保留R下面的资源
 -keep class **.R$* {*;}
@@ -125,7 +123,6 @@
     void *(**On*Event);
     void *(**On*Listener);
 }
-
 #xwalk
 -keep class org.xwalk.core.** { *; }
 -keep class org.crosswalk.engine.** { *; }
@@ -189,25 +186,23 @@
 -dontwarn tv.danmaku.ijk.**
 
 # ExoPlayer
--keep class org.xmlpull.v1.** { *; }
--keep class com.google.android.exoplayer2.** { *; }
--dontwarn com.google.android.exoplayer2.**
+-keep class com.google.androidx.media3.exoplayer.** { *; }
+-dontwarn com.google.androidx.media3.exoplayer.**
 
 # sardine webdav
 -keep class com.thegrizzlylabs.sardineandroid.** { *; }
 -dontwarn com.thegrizzlylabs.sardineandroid.**
 
-# filepicker
--keep class com.obsez.android.lib.filechooser.** { *; }
--dontwarn com.obsez.android.lib.filechooser.**
-
 # jcifs (smb)
 -keep class jcifs.** { *; }
 -dontwarn jcifs.**
 
+# filepicker
+-keep class com.obsez.android.lib.filechooser.** { *; }
+-dontwarn com.obsez.android.lib.filechooser.**
+
 # 实体类
 #-keep class com.github.tvbox.osc.bean.** { *; }
--keep class com.github.tvbox.osc.ui.fragment.homes.**{*;}
 #CardView
 -keep class com.github.tvbox.osc.ui.tv.widget.card.**{*;}
 #ViewObj
@@ -216,19 +211,9 @@
 }
 
 -keep class com.github.catvod.crawler.*{*;}
-
-# magnet：解决模拟器推送 磁力链接 闪退
+# 迅雷下载模块
 -keep class com.xunlei.downloadlib.** {*;}
 # quickjs引擎
--keep class com.whl.quickjs.** {*;}
-#-keep class com.quickjs.android.** {*;}
-# jsoup
--keep class org.jsoup.** {*;}
-
-# support python
--keep public class com.undcover.freedom.pyramid.** { *; }
--dontwarn com.undcover.freedom.pyramid.**
--keep public class com.chaquo.python.** { *; }
--dontwarn com.chaquo.python.**
-
+-keep class com.quickjs.android.** {*;}
+# 支持影视的ali相关的jar
 -keep class com.google.gson.**{*;}
