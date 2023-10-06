@@ -911,7 +911,7 @@ public class PlayFragment extends BaseLazyFragment {
             }
         }
         if (Thunder.play(vs.url, new Thunder.ThunderCallback() {
-            @Override
+            
             public void status(int code, String info) {
                 if (code < 0) {
                     setTip(info, false, true);
@@ -919,8 +919,7 @@ public class PlayFragment extends BaseLazyFragment {
                     setTip(info, true, false);
                 }
             }
-
-            @Override
+            
             public void list(String playList) {
             }
 
@@ -1742,5 +1741,4 @@ public class PlayFragment extends BaseLazyFragment {
             callback.onReceiveValue(true);
         }
     }
-
 }
