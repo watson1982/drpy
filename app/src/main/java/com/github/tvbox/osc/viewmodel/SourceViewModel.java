@@ -1,7 +1,7 @@
 package com.github.tvbox.osc.viewmodel;
 
-import android.net.Uri;
 import android.text.TextUtils;
+
 import android.util.Base64;
 import androidx.annotation.NonNull;
 import androidx.lifecycle.MutableLiveData;
@@ -37,9 +37,11 @@ import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
+
 import okhttp3.Call;
 import org.greenrobot.eventbus.EventBus;
 import org.json.JSONObject;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
@@ -49,6 +51,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -71,7 +74,7 @@ public class SourceViewModel extends ViewModel {
     public MutableLiveData<AbsXml> detailResult;
     public MutableLiveData<JSONObject> playResult;
     private ExecutorService searchExecutorService;
-
+    
     public void initExecutor() {
         if (searchExecutorService != null) {
             searchExecutorService.shutdownNow();
@@ -80,13 +83,13 @@ public class SourceViewModel extends ViewModel {
         }
         searchExecutorService = Executors.newFixedThreadPool(5);
     }
-
+    
     public void execute(Runnable runnable) {
         if (searchExecutorService != null) {
             searchExecutorService.execute(runnable);
         }
     }
-
+    
     public List<Runnable> shutdownNow() {
         return searchExecutorService == null ? new ArrayList<>() : searchExecutorService.shutdownNow();
     }
@@ -215,7 +218,7 @@ public class SourceViewModel extends ViewModel {
                             sortResult.postValue(null);
                         }
                     });
-        } else if (type == 4) {
+        }else if (type == 4) {
         	String extend=sourceBean.getExt();
             extend=getFixUrl(extend);
             if(URLEncoder.encode(extend).length()<1000){
@@ -293,17 +296,13 @@ public class SourceViewModel extends ViewModel {
                 } catch (Exception ignored) {
                     sortResult.postValue(null);
                 }
-            }
+            }  
         } else {
             sortResult.postValue(null);
         }
     }
-
     // categoryContent
     public void getList(MovieSort.SortData sortData, int page, String sourceKey) {
-        if (sortData == null) {
-            return;
-        }
         SourceBean homeSourceBean = TextUtils.isEmpty(sourceKey) ? ApiConfig.get().getHomeSourceBean(): ApiConfig.get().getSource(sourceKey);
         int type = homeSourceBean.getType();
         if (type == 3) {
@@ -354,7 +353,7 @@ public class SourceViewModel extends ViewModel {
                             listResult.postValue(null);
                         }
                     });
-        } else if (type == 4) {
+        }else if (type == 4) {
             String ext="";
             if (sortData.filterSelect != null && sortData.filterSelect.size() > 0) {
                 try {
@@ -368,35 +367,35 @@ public class SourceViewModel extends ViewModel {
                 ext = Base64.encodeToString("{}".getBytes(), Base64.DEFAULT |  Base64.NO_WRAP);    
             }
             OkGo.<String>get(homeSourceBean.getApi())
-                    .tag(homeSourceBean.getApi())
-                    .params("ac", "detail")
-                    .params("filter", "true")
-                    .params("t", sortData.id)
-                    .params("pg", page)
-                    .params("ext", ext)
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
-                            } else {
-                                throw new IllegalStateException("网络请求错误");
-                            }
+                .tag(homeSourceBean.getApi())
+                .params("ac", "detail")
+                .params("filter", "true")
+                .params("t", sortData.id)
+                .params("pg", page)
+                .params("ext", ext)
+                .execute(new AbsCallback<String>() {
+                    @Override
+                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                        if (response.body() != null) {
+                            return response.body().string();
+                        } else {
+                            throw new IllegalStateException("网络请求错误");
                         }
+                    }
 
-                        @Override
-                        public void onSuccess(Response<String> response) {
-                            String json = response.body();
-                            LOG.i(json);
-                            json(listResult, json, homeSourceBean.getKey());
-                        }
+                    @Override
+                    public void onSuccess(Response<String> response) {
+                        String json = response.body();
+                        LOG.i(json);
+                        json(listResult, json, homeSourceBean.getKey());
+                    }
 
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
-                            listResult.postValue(null);
-                        }
-                    });
+                    @Override
+                    public void onError(Response<String> response) {
+                        super.onError(response);
+                        listResult.postValue(null);
+                    }
+                });
         } else {
             listResult.postValue(null);
         }
@@ -405,8 +404,7 @@ public class SourceViewModel extends ViewModel {
     interface HomeRecCallback {
         void done(List<Movie.Video> videos);
     }
-
-    //    homeVideoContent
+    //homeVideoContent
     void getHomeRecList(SourceBean sourceBean, ArrayList<String> ids, HomeRecCallback callback) {
         int type = sourceBean.getType();
         if (type == 3) {
@@ -491,11 +489,12 @@ public class SourceViewModel extends ViewModel {
         } else {
             callback.done(null);
         }
-    }
-
-    // detailContent
+    }    
+    
+    // detailContent    
     public void getDetail(String sourceKey, String urlid) {
-    	if (urlid.startsWith("push://") && ApiConfig.get().getSource("push_agent") != null) {           
+
+        if (urlid.startsWith("push://") && ApiConfig.get().getSource("push_agent") != null) {           
             String pushUrl = urlid.substring(7);
             if (pushUrl.startsWith("b64:")) {
                 try {
@@ -509,8 +508,8 @@ public class SourceViewModel extends ViewModel {
             sourceKey = "push_agent";
             urlid = pushUrl;
         }
-        String id = urlid;     	
-    
+        String id = urlid; 	
+
         SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
         int type = sourceBean.getType();
         if (type == 3) {
@@ -519,7 +518,7 @@ public class SourceViewModel extends ViewModel {
                 public void run() {
                     try {
                         Spider sp = ApiConfig.get().getCSP(sourceBean);
-                        List<String> ids = new ArrayList<>();
+                        List<String> ids = new ArrayList<>();                        
                         ids.add(id);
                         json(detailResult, sp.detailContent(ids), sourceBean.getKey());
                     } catch (Throwable th) {
@@ -527,7 +526,7 @@ public class SourceViewModel extends ViewModel {
                     }
                 }
             });
-        } else if (type == 0 || type == 1 || type == 4) {
+        } else if (type == 0 || type == 1|| type == 4) {
             OkGo.<String>get(sourceBean.getApi())
                     .tag("detail")
                     .params("ac", type == 0 ? "videolist" : "detail")
@@ -565,7 +564,6 @@ public class SourceViewModel extends ViewModel {
             detailResult.postValue(null);
         }
     }
-
     // searchContent
     public void getSearch(String sourceKey, String wd) {
         SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
@@ -577,7 +575,7 @@ public class SourceViewModel extends ViewModel {
                 if(!TextUtils.isEmpty(search)){
                     json(searchResult, search, sourceBean.getKey());
                 } else {
-                    json(searchResult, "", sourceBean.getKey());
+                    json(searchResult, "", sourceBean.getKey());    
                 }
             } catch (Throwable th) {
                 th.printStackTrace();
@@ -616,41 +614,40 @@ public class SourceViewModel extends ViewModel {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
                         }
                     });
-        } else if (type == 4) {
+        }else if (type == 4) {
             OkGo.<String>get(sourceBean.getApi())
-                    .params("wd", wd)
-                    .params("ac", "detail")
-                    .params("quick", "false")
-                    .tag("search")
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
-                            } else {
-                                throw new IllegalStateException("网络请求错误");
-                            }
+                .params("wd", wd)
+                .params("ac" ,"detail")
+                .params("quick" ,"false")
+                .tag("search")
+                .execute(new AbsCallback<String>() {
+                    @Override
+                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                        if (response.body() != null) {
+                            return response.body().string();
+                        } else {
+                            throw new IllegalStateException("网络请求错误");
                         }
+                    }
 
-                        @Override
-                        public void onSuccess(Response<String> response) {
+                    @Override
+                    public void onSuccess(Response<String> response) {
                             String json = response.body();
                         LOG.i(json);
                             json(searchResult, json, sourceBean.getKey());
                     }
 
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
-                            // searchResult.postValue(null);
-                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
-                        }
-                    });
+                    @Override
+                    public void onError(Response<String> response) {
+                        super.onError(response);
+                        // searchResult.postValue(null);
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                    }
+                });
         } else {
             searchResult.postValue(null);
         }
     }
-
     // searchContent
     public void getQuickSearch(String sourceKey, String wd) {
         SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
@@ -695,43 +692,40 @@ public class SourceViewModel extends ViewModel {
                             EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, null));
                         }
                     });
-        } else if (type == 4) {
+        }else if (type == 4) {
             OkGo.<String>get(sourceBean.getApi())
-                    .params("wd", wd)
-                    .params("ac", "detail")
-                    .params("quick", "true")
-                    .tag("search")
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
-                            } else {
-                                throw new IllegalStateException("网络请求错误");
-                            }
+                .params("wd", wd)
+                .params("ac" ,"detail")
+                .params("quick" ,"true")
+                .tag("search")
+                .execute(new AbsCallback<String>() {
+                    @Override
+                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                        if (response.body() != null) {
+                            return response.body().string();
+                        } else {
+                            throw new IllegalStateException("网络请求错误");
                         }
+                    }
 
-                        @Override
-                        public void onSuccess(Response<String> response) {
-                            String json = response.body();
-                            execute(() -> {
-                                LOG.i(json);
-                                json(quickSearchResult, json, sourceBean.getKey());
-                            });
-                        }
+                    @Override
+                    public void onSuccess(Response<String> response) {
+                        String json = response.body();
+                        LOG.i(json);
+                        json(quickSearchResult, json, sourceBean.getKey());
+                    }
 
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
-                            // searchResult.postValue(null);
-                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
-                        }
-                    });
+                    @Override
+                    public void onError(Response<String> response) {
+                        super.onError(response);
+                        // searchResult.postValue(null);
+                        EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_SEARCH_RESULT, null));
+                    }
+                });
         } else {
             quickSearchResult.postValue(null);
         }
     }
-
     // playerContent
     public void getPlay(String sourceKey, String playFlag, String progressKey, String url, String subtitleKey) {
         SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
@@ -743,7 +737,7 @@ public class SourceViewModel extends ViewModel {
                     Spider sp = ApiConfig.get().getCSP(sourceBean);
                     if(TextUtils.isEmpty(url))return;                    
                     try {
-                        String json = sp.playerContent(playFlag, url, ApiConfig.get().getVipParseFlags());
+                    	String json = sp.playerContent(playFlag, url, ApiConfig.get().getVipParseFlags());
                         JSONObject result = new JSONObject(json);
                         result.put("key", url);
                         result.put("proKey", progressKey);
@@ -779,53 +773,53 @@ public class SourceViewModel extends ViewModel {
                 playResult.postValue(null);
             }
         } else if (type == 4) {
-            String extend=sourceBean.getExt();
+        	String extend=sourceBean.getExt();
             extend=getFixUrl(extend);
             if(URLEncoder.encode(extend).length()>1000)extend="";
             OkGo.<String>get(sourceBean.getApi())
-                    .params("play", url)
-                    .params("flag", playFlag)
-                    .params("extend", extend)
-                    .tag("play")
-                    .execute(new AbsCallback<String>() {
-                        @Override
-                        public String convertResponse(okhttp3.Response response) throws Throwable {
-                            if (response.body() != null) {
-                                return response.body().string();
-                            } else {
-                                throw new IllegalStateException("网络请求错误");
-                            }
+                .params("play", url)
+                .params("flag" ,playFlag)
+                .params("extend", extend)
+                .tag("play")
+                .execute(new AbsCallback<String>() {
+                    @Override
+                    public String convertResponse(okhttp3.Response response) throws Throwable {
+                        if (response.body() != null) {
+                            return response.body().string();
+                        } else {
+                            throw new IllegalStateException("网络请求错误");
                         }
+                    }
 
-                        @Override
-                        public void onSuccess(Response<String> response) {
-                            String json = response.body();
-                            LOG.i(json);
-                            try {
-                                JSONObject result = new JSONObject(json);
-                                result.put("key", url);
-                                result.put("proKey", progressKey);
-                                result.put("subtKey", subtitleKey);
-                                if (!result.has("flag"))
-                                    result.put("flag", playFlag);
-                                playResult.postValue(result);
-                            } catch (Throwable th) {
-                                th.printStackTrace();
-                                playResult.postValue(null);
-                            }
-                        }
-
-                        @Override
-                        public void onError(Response<String> response) {
-                            super.onError(response);
+                    @Override
+                    public void onSuccess(Response<String> response) {
+                        String json = response.body();
+                        LOG.i(json);
+                        try {
+                            JSONObject result = new JSONObject(json);
+                            result.put("key", url);
+                            result.put("proKey", progressKey);
+                            result.put("subtKey", subtitleKey);
+                            if (!result.has("flag"))
+                                result.put("flag", playFlag);
+                            playResult.postValue(result);
+                        } catch (Throwable th) {
+                            th.printStackTrace();
                             playResult.postValue(null);
                         }
-                    });
-        } else {
+                    }
+
+                    @Override
+                    public void onError(Response<String> response) {
+                        super.onError(response);
+                        playResult.postValue(null);
+                    }
+                });
+        }else {
             playResult.postValue(null);
         }
     }
-
+    
     private String getFixUrl(String content){
         if (content.startsWith("http://127.0.0.1")) {
             String path = content.replaceAll("^http.+/file/", FileUtils.getRootPath()+"/");
@@ -892,7 +886,7 @@ public class SourceViewModel extends ViewModel {
 
     private AbsSortXml sortXml(MutableLiveData<AbsSortXml> result, String xml) {
         try {
-            XStream xstream = new XStream(new DomDriver());//创建XStream对象
+            XStream xstream = new XStream(new DomDriver());//创建Xstram对象
             xstream.autodetectAnnotations(true);
             xstream.processAnnotations(AbsSortXml.class);
             xstream.ignoreUnknownElements();
@@ -947,7 +941,8 @@ public class SourceViewModel extends ViewModel {
             }
         }
     }
-    
+
+
     private AbsXml checkPush(AbsXml data) {
         if (data.movie != null && data.movie.videoList != null && data.movie.videoList.size() > 0) {
             Movie.Video video = data.movie.videoList.get(0);
@@ -1082,55 +1077,59 @@ public class SourceViewModel extends ViewModel {
         if (data.movie != null && data.movie.videoList != null && data.movie.videoList.size() == 1) {
             Movie.Video video = data.movie.videoList.get(0);
             if (video != null && video.urlBean != null && video.urlBean.infoList != null) {
+            	boolean hasThunder=false;
+                thunderLoop:
                 for (int idx=0;idx<video.urlBean.infoList.size();idx++) {
-                    Movie.Video.UrlBean.UrlInfo urlInfo=video.urlBean.infoList.get(idx);
-                    if(urlInfo != null){
-                        List<String> urlList = new ArrayList<>();
-                        for (Movie.Video.UrlBean.UrlInfo.InfoBean infoBean : urlInfo.beanList) {
-                            urlList.add(infoBean.url);
-                        }
-                        if (Thunder.isSupportUrl(urlInfo.beanList.get(0).url)) {
-                            thunderParse = true;
-                            Thunder.parse(App.getInstance(), urlList, new Thunder.ThunderCallback() {
-                                @Override
-                                public void status(int code, String info) {
-                                    if (code >= 0) {
-                                        LOG.i(info);
-                                    } else {
-                                        urlInfo.beanList.get(0).name = info;
-                                        detailResult.postValue(data);
-                                    }
-                                }
-
-                                @Override
-                                public void list(String playList) {
-                                    urlInfo.urls = playList;
-                                    String[] str = playList.split("#");
-                                    List<Movie.Video.UrlBean.UrlInfo.InfoBean> infoBeanList = new ArrayList<>();
-                                    for (String s : str) {
-                                        if (s.contains("$")) {
-                                            String[] ss = s.split("\\$");
-
-                                            if (ss.length > 0) {
-                                                if (ss.length >= 2) {
-                                                    infoBeanList.add(new Movie.Video.UrlBean.UrlInfo.InfoBean(ss[0], ss[1]));
-                                                } else {
-                                                    infoBeanList.add(new Movie.Video.UrlBean.UrlInfo.InfoBean((infoBeanList.size() + 1) + "", ss[0]));
-                                                }
-                                            }
-                                        }
-                                    }
-                                    urlInfo.beanList = infoBeanList;
-                                    detailResult.postValue(data);
-                                }
-
-                                @Override
-                                public void play(String url) {
-
-                                }
-                            });
+                    Movie.Video.UrlBean.UrlInfo urlInfo = video.urlBean.infoList.get(idx);
+                    for (Movie.Video.UrlBean.UrlInfo.InfoBean infoBean : urlInfo.beanList) {
+                        if(Thunder.isSupportUrl(infoBean.url)){
+                            hasThunder=true;
+                            break thunderLoop;
                         }
                     }
+                }
+                if (hasThunder) {
+                    thunderParse = true;
+                    Thunder.parse(App.getInstance(), video.urlBean, new Thunder.ThunderCallback() {
+                        @Override
+                        public void status(int code, String info) {
+                            if (code >= 0) {
+                                LOG.i(info);
+                            } else {
+                                video.urlBean.infoList.get(0).beanList.get(0).name = info;
+                                detailResult.postValue(data);
+                            }
+                        }
+                        
+                        @Override
+                        public void list(Map<Integer, String> urlMap) {
+                            for (int key : urlMap.keySet()) {
+                                String playList=urlMap.get(key);
+                                video.urlBean.infoList.get(key).urls = playList;
+                                String[] str = playList.split("#");
+                                List<Movie.Video.UrlBean.UrlInfo.InfoBean> infoBeanList = new ArrayList<>();
+                                for (String s : str) {
+                                    if (s.contains("$")) {
+                                        String[] ss = s.split("\\$");
+
+                                        if (ss.length > 0) {
+                                            if (ss.length >= 2) {
+                                                infoBeanList.add(new Movie.Video.UrlBean.UrlInfo.InfoBean(ss[0], ss[1]));
+                                            } else {
+                                                infoBeanList.add(new Movie.Video.UrlBean.UrlInfo.InfoBean((infoBeanList.size() + 1) + "", ss[0]));
+                                            }                            
+                                        }
+                                    }                                    
+                                }
+                                video.urlBean.infoList.get(key).beanList = infoBeanList;
+                            }
+                            detailResult.postValue(data);
+                        }
+                        
+                        @Override
+                        public void play(String url) {                                                                                             
+                        }
+                    });
                 }
             }
         }
@@ -1141,7 +1140,7 @@ public class SourceViewModel extends ViewModel {
 
     private AbsXml xml(MutableLiveData<AbsXml> result, String xml, String sourceKey) {
         try {
-            XStream xstream = new XStream(new DomDriver());//创建Xstream对象
+            XStream xstream = new XStream(new DomDriver());//创建Xstram对象
             xstream.autodetectAnnotations(true);
             xstream.processAnnotations(AbsXml.class);
             xstream.ignoreUnknownElements();
@@ -1160,6 +1159,7 @@ public class SourceViewModel extends ViewModel {
                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, data));
             } else if (result != null) {
                 if (result == detailResult) {
+                    data = checkPush(data);
                     checkThunder(data,0);
                 } else {
                     result.postValue(data);
@@ -1185,7 +1185,7 @@ public class SourceViewModel extends ViewModel {
                     "\t\"list\": [{\n" +
                     "\t\t\"vod_id\": \"137133\",\n" +
                     "\t\t\"vod_name\": \"磁力测试\",\n" +
-                    "\t\t\"vod_pic\": \"https:/img9.doubanio.com/view/photo/s_ratio_poster/public/p2656327176.webp\",\n" +
+                    "\t\t\"vod_pic\": \"https:/img9.doubanio.com/view/photo/s_ratio_poster/public/p2656327176.webp@User-Agent=com.douban.frodo\",\n" +
                     "\t\t\"type_name\": \"剧情 / 爱情 / 古装\",\n" +
                     "\t\t\"vod_year\": \"2022\",\n" +
                     "\t\t\"vod_area\": \"中国大陆\",\n" +
@@ -1207,6 +1207,7 @@ public class SourceViewModel extends ViewModel {
                 EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_QUICK_SEARCH_RESULT, data));
             } else if (result != null) {
                 if (result == detailResult) {
+                    data = checkPush(data);
                     checkThunder(data,0);
                 } else {
                     result.postValue(data);
