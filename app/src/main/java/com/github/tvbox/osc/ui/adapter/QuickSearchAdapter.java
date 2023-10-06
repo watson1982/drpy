@@ -32,15 +32,7 @@ public class QuickSearchAdapter extends BaseQuickAdapter<Movie.Video, BaseViewHo
         }
         ImageView ivThumb = helper.getView(R.id.ivThumb);
         if (!TextUtils.isEmpty(item.pic)) {
-            Picasso.get()
-                    .load(item.pic)
-                    .transform(new RoundTransformation(MD5.string2MD5(item.pic + "position=" + helper.getLayoutPosition()))
-                            .centerCorp(true)
-                            .override(AutoSizeUtils.mm2px(mContext, 300), AutoSizeUtils.mm2px(mContext, 400))
-                            .roundRadius(AutoSizeUtils.mm2px(mContext, 15), RoundTransformation.RoundType.ALL))
-                    .placeholder(R.drawable.error_loading)
-                    .error(R.drawable.error_loading)
-                    .into(ivThumb);
+            ImgUtil.load(mVideo.pic, ivThumb, 10);
         } else {
             ivThumb.setImageResource(R.drawable.error_loading);
         }
