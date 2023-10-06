@@ -13,12 +13,14 @@ import com.whl.quickjs.wrapper.QuickJSContext;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import okhttp3.Call;
 import okhttp3.FormBody;
 import okhttp3.Headers;
 import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
@@ -43,7 +45,11 @@ public class Connect {
             setHeader(ctx, res, jsHeader);
             jsObject.set("headers", jsHeader);
             if (req.getBuffer() == 0) jsObject.set("content", new String(res.body().bytes(), req.getCharset()));
-            if (req.getBuffer() == 1) jsObject.set("content", new JSUtils<>().toArray(ctx, res.body().bytes()));
+            if (req.getBuffer() == 1) {
+                JSArray array = ctx.createJSArray();
+                for (byte aByte : res.body().bytes()) array.push((int) aByte);
+                jsObject.set("content", array);
+            }
             if (req.getBuffer() == 2) jsObject.set("content", Base64.encodeToString(res.body().bytes(), Base64.DEFAULT));
             return jsObject;
         } catch (Exception e) {
@@ -72,6 +78,7 @@ public class Connect {
     private static RequestBody getPostBody(Req req, String contentType) {
         if (req.getData() != null && req.getPostType().equals("json")) return getJsonBody(req);
         if (req.getData() != null && req.getPostType().equals("form")) return getFormBody(req);
+        if (req.getData() != null && req.getPostType().equals("form-data")) return getFormDataBody(req);
         if (req.getBody() != null && contentType != null) return RequestBody.create(MediaType.get(contentType), req.getBody());
         return RequestBody.create(null, "");
     }
@@ -85,6 +92,14 @@ public class Connect {
         Map<String, String> params = Json.toMap(req.getData());
         for (String key : params.keySet()) formBody.add(key, params.get(key));
         return formBody.build();
+    }
+
+    private static RequestBody getFormDataBody(Req req) {
+        String boundary = "--dio-boundary-" + new Random().nextInt(42949) + "" + new Random().nextInt(67296);
+        MultipartBody.Builder builder = new MultipartBody.Builder(boundary).setType(MultipartBody.FORM);
+        Map<String, String> params = Json.toMap(req.getData());
+        for (String key : params.keySet()) builder.addFormDataPart(key, params.get(key));
+        return builder.build();
     }
 
     private static void setHeader(QuickJSContext ctx, Response res, JSObject object) {
