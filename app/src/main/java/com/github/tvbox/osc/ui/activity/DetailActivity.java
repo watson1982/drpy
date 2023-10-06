@@ -41,7 +41,7 @@ import com.github.tvbox.osc.bean.VodInfo;
 import com.github.tvbox.osc.bean.VodSeriesGroup;
 import com.github.tvbox.osc.cache.RoomDataManger;
 import com.github.tvbox.osc.event.RefreshEvent;
-import com.github.tvbox.osc.picasso.RoundTransformation;
+import com.github.tvbox.osc.util.ImgUtil;
 import com.github.tvbox.osc.ui.adapter.SeriesAdapter;
 import com.github.tvbox.osc.ui.adapter.SeriesFlagAdapter;
 import com.github.tvbox.osc.ui.adapter.SeriesGroupAdapter;
@@ -64,7 +64,6 @@ import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7GridLayoutManager;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
 import com.github.tvbox.osc.util.StringUtils;
-import com.squareup.picasso.Picasso;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -650,15 +649,7 @@ public class DetailActivity extends BaseActivity {
                     setTextShow(tvDirector, getString(R.string.det_dir), mVideo.director);
                     setTextShow(tvDes, getString(R.string.det_des), removeHtmlTag(mVideo.des));
                     if (!TextUtils.isEmpty(mVideo.pic)) {
-                        Picasso.get()
-                                .load(DefaultConfig.checkReplaceProxy(mVideo.pic))
-                                .transform(new RoundTransformation(MD5.string2MD5(mVideo.pic + mVideo.name))
-                                        .centerCorp(true)
-                                        .override(AutoSizeUtils.mm2px(mContext, 300), AutoSizeUtils.mm2px(mContext, 400))
-                                        .roundRadius(AutoSizeUtils.mm2px(mContext, 15), RoundTransformation.RoundType.ALL))
-                                .placeholder(R.drawable.img_loading_placeholder)
-                                .error(R.drawable.img_loading_placeholder)
-                                .into(ivThumb);
+                        ImgUtil.load(mVideo.pic, ivThumb, 10);
                     } else {
                         ivThumb.setImageResource(R.drawable.img_loading_placeholder);
                     }
