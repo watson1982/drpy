@@ -9,8 +9,8 @@ import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.chad.library.adapter.base.BaseViewHolder;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.bean.Movie;
-import com.github.tvbox.osc.util.ImgUtil;
 import com.github.tvbox.osc.util.DefaultConfig;
+import com.github.tvbox.osc.util.ImgUtil;
 import com.github.tvbox.osc.util.MD5;
 
 import java.util.ArrayList;
@@ -26,18 +26,19 @@ public class GridAdapter extends BaseQuickAdapter<Movie.Video, BaseViewHolder> {
     private boolean mShowList = false;
 
     public GridAdapter(boolean l) {
-        super(l ? R.layout.item_list : R.layout.item_grid, new ArrayList<>());
+        super( l ? R.layout.item_list:R.layout.item_grid, new ArrayList<>());
         this.mShowList = l;
     }
 
     @Override
     protected void convert(BaseViewHolder helper, Movie.Video item) {
-        if (this.mShowList) {
+        if(this.mShowList) {
             helper.setText(R.id.tvNote, item.note);
             helper.setText(R.id.tvName, item.name);
             ImageView ivThumb = helper.getView(R.id.ivThumb);
             //由于部分电视机使用glide报错
             if (!TextUtils.isEmpty(item.pic)) {
+                item.pic=item.pic.trim();
                 ImgUtil.load(item.pic, ivThumb, 10);
             } else {
                 ivThumb.setImageResource(R.drawable.img_loading_placeholder);
@@ -79,6 +80,7 @@ public class GridAdapter extends BaseQuickAdapter<Movie.Video, BaseViewHolder> {
         ImageView ivThumb = helper.getView(R.id.ivThumb);
         //由于部分电视机使用glide报错
         if (!TextUtils.isEmpty(item.pic)) {
+            item.pic=item.pic.trim();
             ImgUtil.load(item.pic, ivThumb, 10);
         } else {
             ivThumb.setImageResource(R.drawable.img_loading_placeholder);
