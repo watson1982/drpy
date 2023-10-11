@@ -167,6 +167,9 @@ public class JsSpider extends Spider {
                 ctx.execute(byteFF(b), key + ".js","__jsEvalReturn");
                 ctx.evaluate("globalThis." + key + " = __JS_SPIDER__;");
             } else {
+                if (content.contains("__JS_SPIDER__")) {
+                    content = content.replaceAll("__JS_SPIDER__\\s*=", "export default ");
+                }
                 String moduleExtName = "default";
                 if (content.contains("__jsEvalReturn") && !content.contains("export default")) {
                     moduleExtName = "__jsEvalReturn";
