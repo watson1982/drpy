@@ -6,7 +6,8 @@ import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.bean.IJKCode;
 import com.github.tvbox.osc.player.EXOmPlayer;
 import com.github.tvbox.osc.player.IjkmPlayer;
-import com.github.tvbox.osc.player.render.SurfaceRenderViewFactory;
+
+import xyz.doikki.videoplayer.render.SurfaceRenderViewFactory;
 import com.orhanobut.hawk.Hawk;
 
 import org.json.JSONException;
@@ -14,7 +15,7 @@ import org.json.JSONObject;
 
 import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 
-import xyz.doikki.videoplayer.player.AndroidMediaPlayerFactory;
+import xyz.doikki.videoplayer.SysMedia.AndroidMediaPlayerFactory;
 import xyz.doikki.videoplayer.player.PlayerFactory;
 import xyz.doikki.videoplayer.player.VideoView;
 import xyz.doikki.videoplayer.render.RenderViewFactory;
@@ -127,6 +128,8 @@ public class PlayerHelper {
     public static String getRenderName(int renderType) {
         if (renderType == 1) {
             return "SurfaceView";
+        } else if(renderType == 2) {
+            return "GlSurfaceView";
         } else {
             return "TextureView";
         }

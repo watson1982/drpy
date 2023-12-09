@@ -36,6 +36,8 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
 
+    <uses-sdk android:minSdkVersion="18" tools:overrideLibrary="com.google.android.exoplayer2.ext.okhttp" />
+
     <application
         android:name=".base.App"
         android:allowBackup="true"

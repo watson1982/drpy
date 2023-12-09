@@ -4,6 +4,8 @@ import android.content.Context;
 import android.net.Uri;
 import android.text.TextUtils;
 
+import androidx.annotation.Nullable;
+
 import com.google.android.exoplayer2.C;
 import com.google.android.exoplayer2.MediaItem;
 import com.google.android.exoplayer2.database.ExoDatabaseProvider;
@@ -24,7 +26,10 @@ import com.google.android.exoplayer2.util.Util;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.Locale;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import okhttp3.OkHttpClient;
 
@@ -103,16 +108,34 @@ public final class ExoMediaSourceHelper {
                 return new ProgressiveMediaSource.Factory(factory).createMediaSource(MediaItem.fromUri(contentUri));
         }
     }
+    private static final Pattern ISM_URL_PATTERN = Pattern.compile(".*\\.isml?(?:/(manifest(.*))?)?");
+    private static final String ISM_HLS_FORMAT_EXTENSION = "format=m3u8-aapl";
+    private static final String ISM_DASH_FORMAT_EXTENSION = "format=mpd-time-csf";
 
-    private int inferContentType(String fileName) {
-        fileName = fileName.toLowerCase();
-        if (fileName.contains("mpd")) {
+    public static String toLowerInvariant(String text) {
+        return text == null ? text : text.toLowerCase(Locale.US);
+    }
+
+    private  int inferContentType(String fileName) {
+        fileName = toLowerInvariant(fileName);
+        if (fileName.endsWith(".mpd")) {
             return C.TYPE_DASH;
-        } else if (fileName.contains("m3u8")) {
+        } else if (fileName.endsWith(".m3u8")) {
             return C.TYPE_HLS;
-        } else {
-            return C.TYPE_OTHER;
         }
+        Matcher ismMatcher = ISM_URL_PATTERN.matcher(fileName);
+        if (ismMatcher.matches()) {
+            @Nullable String extensions = ismMatcher.group(2);
+            if (extensions != null) {
+                if (extensions.contains(ISM_DASH_FORMAT_EXTENSION)) {
+                    return C.TYPE_DASH;
+                } else if (extensions.contains(ISM_HLS_FORMAT_EXTENSION)) {
+                    return C.TYPE_HLS;
+                }
+            }
+            return C.TYPE_SS;
+        }
+        return C.TYPE_OTHER;
     }
 
     private DataSource.Factory getCacheDataSourceFactory() {

@@ -2,6 +2,9 @@ package xyz.doikki.videoplayer.player;
 
 import android.content.Context;
 
+import xyz.doikki.videoplayer.SysMedia.AndroidMediaPlayer;
+import xyz.doikki.videoplayer.SysMedia.AndroidMediaPlayerFactory;
+
 /**
  * 此接口使用方法：
  * 1.继承{@link AbstractPlayer}扩展自己的播放器。

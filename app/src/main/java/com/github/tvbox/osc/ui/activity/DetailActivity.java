@@ -234,12 +234,12 @@ public class DetailActivity extends BaseActivity {
                 if (vodInfo != null && vodInfo.seriesMap.size() > 0) {
                     vodInfo.reverseSort = !vodInfo.reverseSort;
                     preFlag = "";
-                    if (vodInfo.seriesMap.get(vodInfo.playFlag).size() > vodInfo.playIndex) {
-                        vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.playIndex).selected = false;
+                    if (vodInfo.seriesMap.get(vodInfo.playFlag).size() > vodInfo.getplayIndex()) {
+                        vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.getplayIndex()).selected = false;
                     }
                     vodInfo.reverse();
-                    if (vodInfo.seriesMap.get(vodInfo.playFlag).size() > vodInfo.playIndex) {
-                        vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.playIndex).selected = true;
+                    if (vodInfo.seriesMap.get(vodInfo.playFlag).size() > vodInfo.getplayIndex()) {
+                        vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.getplayIndex()).selected = true;
                     }
                     refreshList();
                     insertVod(sourceKey, vodInfo);
@@ -386,8 +386,8 @@ public class DetailActivity extends BaseActivity {
                     vodInfo.seriesFlags.get(position).selected = true;
 
                     // clean pre flag select status
-                    if (vodInfo.seriesMap.get(vodInfo.playFlag).size() > vodInfo.playIndex) {
-                        vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.playIndex).selected = false;
+                    if (vodInfo.seriesMap.get(vodInfo.playFlag).size() > vodInfo.getplayIndex()) {
+                        vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.getplayIndex()).selected = false;
                     }
                     vodInfo.playFlag = newFlag;
 
@@ -419,7 +419,7 @@ public class DetailActivity extends BaseActivity {
                 FastClickCheckUtil.check(view);
                 if (vodInfo != null && vodInfo.seriesMap.get(vodInfo.playFlag).size() > 0) {
                     boolean reload = false;
-                    if (vodInfo.playIndex != GroupIndex * GroupCount + position) {
+                    if (vodInfo.getplayIndex() != GroupIndex * GroupCount + position) {
                         for (int i = 0; i < seriesAdapter.getData().size(); i++){
                             VodInfo.VodSeries Series = seriesAdapter.getData().get(i);
                             Series.selected = false;
@@ -427,13 +427,15 @@ public class DetailActivity extends BaseActivity {
                         }
                         seriesAdapter.getData().get(position).selected = true;
                         seriesAdapter.notifyItemChanged(position);
-                        vodInfo.playIndex = GroupIndex * GroupCount + position;
+                        vodInfo.playIndex = position;
+                        vodInfo.playGroup = GroupIndex;
                         reload = true;
                     }
                     //解决当前集不刷新的BUG
                     if (!vodInfo.playFlag.equals(preFlag)) {
                         reload = true;
                     }
+
                     //选集全屏 想选集不全屏的注释下面一行
                     if (showPreview && !fullWindows) toggleFullPreview();
                     if (reload || !showPreview) jumpToPlay();
@@ -506,6 +508,9 @@ public class DetailActivity extends BaseActivity {
                     previewVodInfo.playerCfg = vodInfo.playerCfg;
                     previewVodInfo.playFlag = vodInfo.playFlag;
                     previewVodInfo.playIndex = vodInfo.playIndex;
+                    previewVodInfo.playGroup = vodInfo.playGroup;
+                    previewVodInfo.reverseSort = vodInfo.reverseSort;
+                    previewVodInfo.playGroupCount = vodInfo.playGroupCount;
                     previewVodInfo.seriesMap = vodInfo.seriesMap;
                     bundle.putSerializable("VodInfo", previewVodInfo);
                 }
@@ -518,28 +523,28 @@ public class DetailActivity extends BaseActivity {
 
     private void refreshList() {
         try {
-            if (vodInfo.seriesMap.get(vodInfo.playFlag).size() <= vodInfo.playIndex) {
+            if (vodInfo.seriesMap.get(vodInfo.playFlag).size() <= vodInfo.getplayIndex()) {
                 vodInfo.playIndex = 0;
             }
             if (vodInfo.seriesMap.get(vodInfo.playFlag) != null) {
-                vodInfo.seriesMap.get(vodInfo.playFlag).get(this.vodInfo.playIndex).selected = true;
+                vodInfo.seriesMap.get(vodInfo.playFlag).get(this.vodInfo.getplayIndex()).selected = true;
             }
 
             List<VodSeriesGroup> seriesGroupList = getSeriesGroupList();
-            seriesGroupList.get(GroupIndex).selected = true;
+            seriesGroupList.get(vodInfo.playGroup).selected = true;
             seriesGroupAdapter.setNewData(seriesGroupList);
 
-            seriesAdapter.setNewData(uu.get(GroupIndex));
+
+            seriesAdapter.setNewData(uu.get(vodInfo.playGroup));
 
             mGridView.postDelayed(new Runnable() {
                 @Override
                 public void run() {
-                    mGridView.scrollToPosition(vodInfo.playIndex % GroupCount);
-                    mSeriesGroupView.scrollToPosition(GroupIndex);
+                    mGridView.scrollToPosition(vodInfo.playGroup);
+                    mSeriesGroupView.scrollToPosition(vodInfo.playGroup);
                 }
             }, 100);
         } catch (Exception e) {
-            //Log.e("refreshList", e.getMessage());
         }
     }
 
@@ -554,46 +559,41 @@ public class DetailActivity extends BaseActivity {
             List<VodInfo.VodSeries> vodSeries = vodInfo.seriesMap.get(vodInfo.playFlag);
             int size = vodSeries.size();
             GroupCount = size > 2500.0d ? 300 : size > 1500.0d ? 200 : size > 1000.0d ? 150 : size > 500.0d ? 100 : size > 300.0d ? 50 : size > 100.0d ? 30 : 20;
-            GroupIndex = (int) Math.floor(vodInfo.playIndex / (GroupCount + 0.0f));
+            vodInfo.playGroupCount = GroupCount;
+            GroupIndex = (int) Math.floor(vodInfo.getplayIndex() / (GroupCount + 0.0f));
             if (GroupIndex < 0) {
                 GroupIndex = 0;
             }
-            if (size > GroupCount) {
-                /*int start = getNum(vodSeries.get(0).name);
-                int end = getNum(vodSeries.get(size - 1).name);
-                if (end == 1 && start > 1) {
-                    this.vodInfo.reverse();
-                    vodSeries = vodInfo.seriesMap.get(vodInfo.playFlag);
-                }*/
-                int GroupSize = (int) Math.ceil(size / (GroupCount + 0.0f));
-                for(int i = 0; i < GroupSize; i++){
-                    mSeriesGroupView.setVisibility(View.VISIBLE);
-                    int s = (i * GroupCount) + 1;
-                    int e = (i + 1) * GroupCount;
-                    List<VodInfo.VodSeries> info = new ArrayList<>();
-                    if (e < size) {
-                        for (int j = s - 1; j < e; j++) {
-                            info.add(vodSeries.get(j));
-                        }
-                        arrayList.add(new VodSeriesGroup(s + "-" + e));
-                        //arrayList.add(s + "-" + e);
-                    } else {
-                        for (int j = s - 1; j < size; j++) {
-                            info.add(vodSeries.get(j));
-                        }
-                        arrayList.add(new VodSeriesGroup(s + "-" + size));
-                        //arrayList.add(s + "-" + size);
-                    }
-                    uu.add(info);
+            int Groups = (int) Math.ceil(size / (GroupCount + 0.0f));
+            for(int i = 0; i < Groups; i++){
+                mSeriesGroupView.setVisibility(View.VISIBLE);
+                int s = (i * GroupCount) + 1;
+                int e = (i + 1) * GroupCount;
+                int name_s = s;
+                int name_e = e;
+                if(vodInfo.reverseSort){
+                    name_s = size - i * GroupCount;
+                    name_e = size - (i + 1) * GroupCount + 1;
                 }
-            } else {
-                arrayList.add(new VodSeriesGroup("1-" + size));
-                //arrayList.add("1-" + size);
-                uu.add(vodSeries);
-                mSeriesGroupView.setVisibility(View.GONE);
+                List<VodInfo.VodSeries> info = new ArrayList<>();
+                if (e < size) {
+                    for (int j = s - 1; j < e; j++) {
+                        info.add(vodSeries.get(j));
+                    }
+                    arrayList.add(new VodSeriesGroup(name_s + "-" + name_e));
+                } else {
+                    for (int j = s - 1; j < size; j++) {
+                        info.add(vodSeries.get(j));
+                    }
+                    if(vodInfo.reverseSort){
+                        arrayList.add(new VodSeriesGroup(name_s + "-" + 1));
+                    }else {
+                        arrayList.add(new VodSeriesGroup(name_s + "-" + size));
+                    }
+                }
+                uu.add(info);
             }
         } catch (Exception e) {
-            //Log.e("getFilter", e.getMessage());
         }
         return arrayList;
     }
@@ -658,11 +658,16 @@ public class DetailActivity extends BaseActivity {
                         // 读取历史记录
                         if (vodInfoRecord != null) {
                             vodInfo.playIndex = Math.max(vodInfoRecord.playIndex, 0);
+                            vodInfo.playGroup = Math.max(vodInfoRecord.playGroup, 0);
+                            GroupIndex = vodInfo.playGroup;
+                            vodInfo.playGroupCount = Math.max(vodInfoRecord.playGroupCount, 0);
+                            GroupCount = vodInfo.playGroupCount;
                             vodInfo.playFlag = vodInfoRecord.playFlag;
                             vodInfo.playerCfg = vodInfoRecord.playerCfg;
                             vodInfo.reverseSort = vodInfoRecord.reverseSort;
                         } else {
                             vodInfo.playIndex = 0;
+                            vodInfo.playGroup = 0;
                             vodInfo.playFlag = null;
                             vodInfo.playerCfg = "";
                             vodInfo.reverseSort = false;
@@ -685,7 +690,7 @@ public class DetailActivity extends BaseActivity {
                                 flag.selected = false;
                         }
                         //设置播放地址
-                        setTextShow(tvPlayUrl1, "播放地址", vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.playIndex).url);
+                        setTextShow(tvPlayUrl1, "播放地址", vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.getplayIndex()).url);
                         seriesFlagAdapter.setNewData(vodInfo.seriesFlags);
                         mGridViewFlag.scrollToPosition(flagScrollTo);
 
@@ -753,8 +758,11 @@ public class DetailActivity extends BaseActivity {
                 if (event.obj instanceof Integer) {
                     int index = (int) event.obj;
                     int mGroupIndex = (int) Math.floor(index / (GroupCount + 0.0f));
-
+                    boolean changeGroup = false;
                     if (mGroupIndex != GroupIndex) {
+                        changeGroup = true;
+                        seriesAdapter.getData().get(vodInfo.playIndex).selected = false;
+                        seriesAdapter.notifyItemChanged(vodInfo.playIndex);
                         seriesGroupAdapter.getData().get(GroupIndex).selected = false;
                         seriesGroupAdapter.notifyItemChanged(GroupIndex);
                         seriesGroupAdapter.getData().get(mGroupIndex).selected = true;
@@ -763,18 +771,20 @@ public class DetailActivity extends BaseActivity {
                         GroupIndex = mGroupIndex;
                         mSeriesGroupView.scrollToPosition(mGroupIndex);
                     }
-                    if (index != vodInfo.playIndex) {
-                        //seriesAdapter.setNewData(uu.get(GroupIndex));
-                        seriesAdapter.getData().get(vodInfo.playIndex % GroupCount).selected = false;
-                        seriesAdapter.notifyItemChanged(vodInfo.playIndex % GroupCount);
-                        seriesAdapter.getData().get(index % GroupCount).selected = true;
-                        seriesAdapter.notifyItemChanged(index % GroupCount);
-                        vodInfo.playIndex = index;
-                        mGridView.scrollToPosition(index % GroupCount);
+
+                    if (index != vodInfo.getplayIndex()) {
+                        if(!changeGroup) {
+                            seriesAdapter.getData().get(vodInfo.playIndex).selected = false;
+                            seriesAdapter.notifyItemChanged(vodInfo.playIndex);
+                        }
+                        vodInfo.playIndex = index % GroupCount;
+                        vodInfo.playGroup = index / GroupCount;
+                        seriesAdapter.getData().get(vodInfo.playIndex).selected = true;
+                        seriesAdapter.notifyItemChanged(vodInfo.playIndex);
+                        mGridView.scrollToPosition(vodInfo.playIndex);
                         //保存历史
                         insertVod(sourceKey, vodInfo);
                     }
-
                 } else if (event.obj instanceof JSONObject) {
                     vodInfo.playerCfg = event.obj.toString();
                     //保存历史
@@ -920,7 +930,7 @@ public class DetailActivity extends BaseActivity {
 
     private void insertVod(String sourceKey, VodInfo vodInfo) {
         try {
-            vodInfo.playNote = vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.playIndex).name;
+            vodInfo.playNote = vodInfo.seriesMap.get(vodInfo.playFlag).get(vodInfo.getplayIndex()).name;
         } catch (Throwable th) {
             vodInfo.playNote = "";
         }
