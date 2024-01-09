@@ -18,6 +18,7 @@ public class RefreshEvent {
     public static final int TYPE_PUSH_URL = 9;
     public static final int TYPE_DRIVE_REFRESH = 10;
     public static final int TYPE_LIVEPLAY_UPDATE = 11;
+    public static final int TYPE_PLAY_RUL = 12;
 
     public static final int TYPE_DC_CONFIG_CHANGE = 14;
     public int type;

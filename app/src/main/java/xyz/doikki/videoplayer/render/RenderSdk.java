@@ -16,8 +16,8 @@ public class RenderSdk {
         sLoadLibrary = true;
     }
 
-    public static IRenderProcess createRenderProcess() {
+    public static IRenderSdkProcess createRenderProcess() {
         load();
-        return new RenderProcessImpl();
+        return new RenderSdkProcessImpl();
     }
 }

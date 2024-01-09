@@ -7,6 +7,8 @@ import com.github.tvbox.osc.bean.IJKCode;
 import com.github.tvbox.osc.player.EXOmPlayer;
 import com.github.tvbox.osc.player.IjkmPlayer;
 
+import xyz.doikki.videoplayer.render.RenderSdkSurfaceFactory;
+import xyz.doikki.videoplayer.render.RenderSdkTextureFactory;
 import xyz.doikki.videoplayer.render.SurfaceRenderViewFactory;
 import com.orhanobut.hawk.Hawk;
 
@@ -20,6 +22,7 @@ import xyz.doikki.videoplayer.player.PlayerFactory;
 import xyz.doikki.videoplayer.player.VideoView;
 import xyz.doikki.videoplayer.render.RenderViewFactory;
 import xyz.doikki.videoplayer.render.TextureRenderViewFactory;
+import xyz.doikki.videoplayer.render.TikTokRenderViewFactory;
 
 public class PlayerHelper {
     public static void updateCfg(VideoView videoView, JSONObject playerCfg) {
@@ -63,6 +66,15 @@ public class PlayerHelper {
             case 1:
                 renderViewFactory = SurfaceRenderViewFactory.create();
                 break;
+            case 2:
+                renderViewFactory = RenderSdkTextureFactory.create();
+                break;
+            case 3:
+                renderViewFactory = RenderSdkSurfaceFactory.create();
+                break;
+            case 4:
+                renderViewFactory = TikTokRenderViewFactory.create();
+                break;
         }
         videoView.setPlayerFactory(playerFactory);
         videoView.setRenderViewFactory(renderViewFactory);
@@ -100,6 +112,15 @@ public class PlayerHelper {
             case 1:
                 renderViewFactory = SurfaceRenderViewFactory.create();
                 break;
+            case 2:
+                renderViewFactory = RenderSdkTextureFactory.create();
+                break;
+            case 3:
+                renderViewFactory = RenderSdkSurfaceFactory.create();
+                break;
+            case 4:
+                renderViewFactory = TikTokRenderViewFactory.create();
+                break;
         }
         videoView.setPlayerFactory(playerFactory);
         videoView.setRenderViewFactory(renderViewFactory);
@@ -128,8 +149,12 @@ public class PlayerHelper {
     public static String getRenderName(int renderType) {
         if (renderType == 1) {
             return "SurfaceView";
-        } else if(renderType == 2) {
-            return "GlSurfaceView";
+        } else if (renderType == 2){
+            return "SdkTexture";
+        } else if (renderType == 3) {
+            return "SdkSurface";
+        } else if (renderType == 4){
+            return "TikTokRender";
         } else {
             return "TextureView";
         }

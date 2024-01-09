@@ -1,10 +1,9 @@
 package com.github.catvod.net;
 
-import android.util.ArrayMap;
-
 import com.github.tvbox.osc.util.OkGoHelper;
 import com.github.tvbox.osc.util.urlhttp.BrotliInterceptor;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
@@ -16,7 +15,6 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.RequestBody;
-import okhttp3.dnsoverhttps.DnsOverHttps;
 
 public class OkHttp {
 
@@ -63,7 +61,7 @@ public class OkHttp {
         return client().newCall(new Request.Builder().url(url).headers(headers).build());
     }
 
-    public static Call newCall(String url, ArrayMap<String, String> params) {
+    public static Call newCall(String url, Map<String, String> params) {
         return client().newCall(new Request.Builder().url(buildUrl(url, params)).build());
     }
 
@@ -71,9 +69,29 @@ public class OkHttp {
         return client.newCall(new Request.Builder().url(url).post(body).build());
     }
 
-    private static HttpUrl buildUrl(String url, ArrayMap<String, String> params) {
+    public static Call newCall(String url, Headers headers, Map<String, String> params) {
+        return client().newCall(new Request.Builder().url(buildUrl(url, params)).headers(headers).build());
+    }
+
+    private static HttpUrl buildUrl(String url, Map<String, String> params) {
         HttpUrl.Builder builder = Objects.requireNonNull(HttpUrl.parse(url)).newBuilder();
         for (Map.Entry<String, String> entry : params.entrySet()) builder.addQueryParameter(entry.getKey(), entry.getValue());
         return builder.build();
+    }
+
+    public static String string(String url, Map<String, String> headerMap) {
+        try {
+            return newCall(url, headerMap).execute().body().string();
+        } catch (IOException e) {
+            return "";
+        }
+    }
+
+    public static String string(String url) {
+        try {
+            return newCall(url).execute().body().string();
+        } catch (IOException e) {
+            return "";
+        }
     }
 }

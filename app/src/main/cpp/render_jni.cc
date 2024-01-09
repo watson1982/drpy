@@ -17,7 +17,7 @@ extern "C" {
 #define NELEM(x) ((int) (sizeof(x) / sizeof((x)[0])))
 #endif
 
-#define RENDER_PROCESS "xyz/doikki/videoplayer/render/RenderProcessImpl"
+#define RENDER_PROCESS "xyz/doikki/videoplayer/render/RenderSdkProcessImpl"
 
 static jlong GLRENDER_render_process_create(JNIEnv *env, jobject object) {
   auto render_process = new media::RenderProcess(object);
@@ -131,7 +131,7 @@ static JNINativeMethod renderProcessMethods[] = {
     {"updateFilter", "(JILjava/lang/String;)V", (void **) GLRENDER_render_process_update_filter },
     {"updateFilterIntensity", "(JII)V", (void **) GLRENDER_render_process_update_filter_intensity },
     {"deleteFilter", "(JI)V", (void **) GLRENDER_render_process_delete_filter },
-    {"captureFrame", "(JLxyz/doikki/videoplayer/render/listener/OnCaptureListener;)V", (void **) GLRENDER_render_process_capture_frame },
+    {"captureFrame", "(JLxyz/doikki/videoplayer/render/RenderSdkListener/OnCaptureListener;)V", (void **) GLRENDER_render_process_capture_frame },
     {"setMirror", "(JI)V", (void **) GLRENDER_render_process_set_mirror_type },
     {"destroy", "(J)V", (void **) GLRENDER_render_process_destroy },
 };

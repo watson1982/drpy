@@ -120,11 +120,12 @@ public class IjkmPlayer extends IjkPlayer {
     }
     private void setDataSourceHeader(Map<String, String> headers) {
         if (headers != null && !headers.isEmpty()) {
-            String userAgent = headers.get("User-Agent");
+            String userAgent = TextUtils.isEmpty(headers.get("User-Agent"))?headers.get("user-agent"):"";
             if (!TextUtils.isEmpty(userAgent)) {
                 mMediaPlayer.setOption(IjkMediaPlayer.OPT_CATEGORY_FORMAT, "user_agent", userAgent);
                 // 移除header中的User-Agent，防止重复
                 headers.remove("User-Agent");
+                headers.remove("user-agent");
             }
             if (headers.size() > 0) {
                 StringBuilder sb = new StringBuilder();

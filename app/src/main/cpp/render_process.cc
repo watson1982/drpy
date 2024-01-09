@@ -610,7 +610,7 @@ void RenderProcess::GenerateBitmap(int width, int height, jobject listener) {
 
     if (listener != nullptr && render_process_object_ != nullptr) {
       auto clazz = env->GetObjectClass(render_process_object_);
-      jmethodID bitmap_complete_method = env->GetMethodID(clazz, "onCaptureSuccess", "(Landroid/graphics/Bitmap;Lxyz/doikki/videoplayer/render/listener/OnCaptureListener;)V");
+      jmethodID bitmap_complete_method = env->GetMethodID(clazz, "onCaptureSuccess", "(Landroid/graphics/Bitmap;Lxyz/doikki/videoplayer/render/RenderSdkListener/OnCaptureListener;)V");
       if (bitmap_complete_method != nullptr) {
         env->CallVoidMethod(render_process_object_, bitmap_complete_method, new_bitmap, listener);
       }
@@ -647,7 +647,7 @@ void RenderProcess::OnError(JNIEnv *env, int code, jobject listener) {
     return;
   }
   auto clazz = env->GetObjectClass(render_process_object_);
-  jmethodID capture_error_method = env->GetMethodID(clazz, "onCaptureFailed", "(ILxyz/doikki/videoplayer/render/listener/OnCaptureListener;)V");
+  jmethodID capture_error_method = env->GetMethodID(clazz, "onCaptureFailed", "(ILxyz/doikki/videoplayer/render/RenderSdkListener/OnCaptureListener;)V");
   if (capture_error_method != nullptr) {
     env->CallVoidMethod(render_process_object_, capture_error_method, code, listener);
   }

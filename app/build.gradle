@@ -39,7 +39,18 @@ android {
         versionCode versionCodeNew
         versionName versionNameNew
         multiDexEnabled true
-
+        externalNativeBuild {
+            cmake {
+                arguments "-DANDROID_ARM_NEON=TRUE",
+                        "-DANDROID_TOOLCHAIN=clang",
+                        "-DANDROID_STL=c++_shared",
+                        "-DANDROID_API=21",
+                        "-DCMAKE_BUILD_TYPE=RelWithDebInfo"
+                cppFlags "-std=c++11", "-fvisibility=hidden -fvisibility-inlines-hidden", "-ffunction-sections -fdata-sections"
+                cFlags "-ffunction-sections -fdata-sections"
+                abiFilters "armeabi-v7a", "arm64-v8a"
+            }
+        }
         //设置room的Schema的位置
         javaCompileOptions {
             annotationProcessorOptions {
@@ -47,6 +58,7 @@ android {
             }
         }
     }
+    ndkVersion '24.0.8215888'
     productFlavors {
         armeabi_v7a {
             dimension "abi"
@@ -100,7 +112,12 @@ android {
             zipAlignEnabled false
         }
     }
-
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/CMakeLists.txt"
+            version "3.10.2"
+        }
+    }
     applicationVariants.all { variant ->
         variant.outputs.all {
             def type = variant.buildType.name
@@ -124,6 +141,10 @@ android {
 
     buildFeatures {
         dataBinding = true
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 
 //    splits {
@@ -182,17 +203,27 @@ dependencies {
     implementation "com.google.android.exoplayer:exoplayer-rtsp:" + rootProject.ext.exoVersion
     implementation "com.google.android.exoplayer:extension-rtmp:" + rootProject.ext.exoVersion
     //implementation 'com.google.android.exoplayer:extension-okhttp:' + rootProject.ext.exoVersion
-
-    implementation 'xyz.doikki.android.dkplayer:dkplayer-ui:3.3.5'
+    // 排除冲突的依赖
+    //implementation('com.google.android.exoplayer:extension-okhttp:' + rootProject.ext.exoVersion) {
+    //    exclude group: 'com.squareup.okhttp3'
+    //}
+    //implementation "com.aliyun.sdk.android:AliyunPlayer:5.4.6.0-full"
+    implementation 'xyz.doikki.android.dkplayer:dkplayer-ui:3.3.7'
+    //implementation 'com.github.JeffMony:Laker:1.0.6'
 
     //弹窗组件
     //implementation project(":XPopup")
-    //implementation project(":pyramid")
+    implementation project(":pyramid")
 
     implementation('org.xwalk:xwalk_shared_library:23.53.589.4') {
         exclude group: 'com.android.support'
     }
-    implementation 'com.lzy.net:okgo:3.0.4'
+
+    // 排除冲突的依赖
+    implementation('com.lzy.net:okgo:3.0.4') {
+        exclude group: 'com.squareup.okhttp3'
+    }
+
     implementation 'com.owen:tv-recyclerview:3.0.0'
 
     implementation 'com.github.getActivity:XXPermissions:13.6'

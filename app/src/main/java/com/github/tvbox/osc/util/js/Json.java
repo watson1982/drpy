@@ -65,4 +65,5 @@ public class Json {
         for (String key : object.keySet()) map.put(key, safeString(object, key));
         return map;
     }
+
 }

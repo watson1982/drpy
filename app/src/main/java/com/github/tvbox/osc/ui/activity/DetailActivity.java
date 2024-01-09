@@ -134,6 +134,7 @@ public class DetailActivity extends BaseActivity {
     private View seriesFlagFocus = null;
     private BroadcastReceiver pipActionReceiver;
     private ImageView tvPlayUrl;
+    private String PlayUrl;
     private TextView tvPlayUrl1;
     private HashMap<String, String> mCheckSources = null;
     private SeriesGroupAdapter seriesGroupAdapter;
@@ -333,7 +334,7 @@ public class DetailActivity extends BaseActivity {
                         //获取剪切板管理器
                         ClipboardManager cm = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
                         //设置内容到剪切板
-                        cm.setPrimaryClip(ClipData.newPlainText(null, vodInfo.seriesMap.get(vodInfo.playFlag).get(0).url));
+                        cm.setPrimaryClip(ClipData.newPlainText(null, PlayUrl));
                         Toast.makeText(DetailActivity.this, getString(R.string.det_url), Toast.LENGTH_SHORT).show();
                     }
                 });
@@ -807,6 +808,10 @@ public class DetailActivity extends BaseActivity {
                 searchData(event.obj == null ? null : (AbsXml) event.obj);
             } catch (Exception e) {
                 searchData(null);
+            }
+        } else if (event.type == RefreshEvent.TYPE_PLAY_RUL) {
+            if (event.obj != null) {
+                PlayUrl = (String) event.obj;
             }
         }
     }

@@ -27,6 +27,7 @@ import java.util.HashMap;
 import com.jieba_android.JiebaSegmenter;
 
 import com.simple.spiderman.SpiderMan;
+import com.undcover.freedom.pyramid.PythonLoader;
 import com.whl.quickjs.android.QuickJSLoader;
 
 import me.jessyan.autosize.AutoSizeConfig;
@@ -69,7 +70,7 @@ public class App extends MultiDexApplication {
                 .setSupportSubunits(Subunits.MM);
         PlayerHelper.init();
         QuickJSLoader.init();
-
+        PythonLoader.getInstance().setApplication(this);
         JiebaSegmenter.init(instance.getApplicationContext());
     }
 

@@ -27,19 +27,7 @@ import java.util.List;
 
 public class AlistDriveViewModel extends AbstractDriveViewModel {
 
-    private void setRequestHeader(PostRequest request, String origin) {
-        request.headers("User-Agent", UA.random());
-        if (origin != null && !origin.isEmpty()) {
-            if (origin.endsWith("/"))
-                origin = origin.substring(0, origin.length() - 1);
-            request.headers("origin", origin);
-            request.headers("Referer", origin);
-        }
-        request.headers("accept", "application/json, text/plain, */*");
-        request.headers("content-type", "application/json;charset=UTF-8");
-    }
-
-    private void setRequestHeader(GetRequest request, String origin) {
+    private void setRequestHeader(PostRequest<String> request, String origin) {
         request.headers("User-Agent", UA.random());
         if (origin != null && !origin.isEmpty()) {
             if (origin.endsWith("/"))
@@ -85,9 +73,7 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                     String webLink = getUrl(config.get("url").getAsString());
                     try {
                         if (currentDrive.version == 0) {
-                            GetRequest<String> request = OkGo.<String>get(webLink + "/api/public/settings").tag("drive");
-                            setRequestHeader(request, webLink);
-                            String result = request.execute().body().string();
+                            String result = OkGo.<String>get(webLink + "/api/public/settings").tag("drive").headers("User-Agent", UA.random()).execute().body().string();
 
                             JSONObject opt = new JSONObject(result);
                             Object obj = new JSONTokener(opt.optString("data")).nextValue();
@@ -214,7 +200,6 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                             });
                         }
                     } catch (Exception ex) {
-                        ex.printStackTrace();
                         if (callback != null)
                             callback.fail("无法访问，请注意地址格式");
                     }
@@ -242,7 +227,6 @@ public class AlistDriveViewModel extends AbstractDriveViewModel {
                 }
             }
         } catch (UnsupportedEncodingException e) {
-            e.printStackTrace();
             callback.fail(e.getMessage());
         }
 

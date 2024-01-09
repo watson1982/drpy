@@ -575,6 +575,7 @@ public class VodController extends BaseController {
                     players.add(0);  // System
                     players.add(1);  // IJK
                     players.add(2);  // Exo
+                    //players.add(3);  // ALI
                     if (mxPlayerExist) {
                         players.add(10);
                     }

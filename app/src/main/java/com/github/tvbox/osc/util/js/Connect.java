@@ -11,6 +11,7 @@ import com.whl.quickjs.wrapper.JSObject;
 import com.whl.quickjs.wrapper.JSUtils;
 import com.whl.quickjs.wrapper.QuickJSContext;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -35,7 +36,7 @@ public class Connect {
                 .connectTimeout(req.getTimeout(), TimeUnit.MILLISECONDS)
                 .readTimeout(req.getTimeout(), TimeUnit.MILLISECONDS)
                 .writeTimeout(req.getTimeout(), TimeUnit.MILLISECONDS).build();
-        return client.newCall(getRequest(url, req, Headers.of(req.getHeader())));
+        return client.newCall(getRequest(url.replace("https://ghproxy.net/https://","https://external.githubfast.com/https/"), req, Headers.of(req.getHeader())));
     }
 
     public static JSObject success(QuickJSContext ctx, Req req, Response res) {
@@ -98,7 +99,9 @@ public class Connect {
         String boundary = "--dio-boundary-" + new Random().nextInt(42949) + "" + new Random().nextInt(67296);
         MultipartBody.Builder builder = new MultipartBody.Builder(boundary).setType(MultipartBody.FORM);
         Map<String, String> params = Json.toMap(req.getData());
-        for (String key : params.keySet()) builder.addFormDataPart(key, params.get(key));
+        for (String key : params.keySet()){
+            builder.addFormDataPart(key, params.get(key));
+        }
         return builder.build();
     }
 

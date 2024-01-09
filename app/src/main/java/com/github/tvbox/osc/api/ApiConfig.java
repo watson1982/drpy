@@ -9,6 +9,7 @@ import com.github.catvod.crawler.JarLoader;
 import com.github.catvod.crawler.JsLoader;
 import com.github.catvod.crawler.Spider;
 
+import com.github.catvod.crawler.SpiderNull;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.bean.DriveFolderFile;
@@ -38,6 +39,7 @@ import com.orhanobut.hawk.Hawk;
 
 import com.github.tvbox.osc.util.TxtSubscribe;
 import com.github.tvbox.osc.util.StringUtils;
+import com.undcover.freedom.pyramid.PythonLoader;
 
 import org.json.JSONObject;
 
@@ -300,7 +302,6 @@ public class ApiConfig {
     }
 
     private void parseJson(String apiUrl, String jsonStr) {
-
         JsonObject infoJson = new Gson().fromJson(jsonStr, JsonObject.class);
         // spider
         spider = DefaultConfig.safeJsonString(infoJson, "spider", "");
@@ -627,31 +628,38 @@ public class ApiConfig {
         if (sourceBean.getApi().toLowerCase().endsWith(".js")) {
             return jsLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
         }
-
+        if (sourceBean.getApi().toLowerCase().endsWith(".py")) {
+            try {
+                return PythonLoader.getInstance().getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt());
+            } catch (Exception e) {
+                e.printStackTrace();
+                return new SpiderNull();
+            }
+        }
         return jarLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
     }
 
     public Object[] proxyLocal(Map<String, String> param) {
+        //pyramid-add-start
         try {
             String doStr = param.get("do");
-            if (doStr.equals("live")) {
-                String type = param.get("type");
-                if (type.equals("txt")) {
-                    String ext = param.get("ext");
-                    ext = new String(Base64.decode(ext, Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP), "UTF-8");
-                    return TxtSubscribe.load(ext);
-                }
-            }
             if (doStr.equals("js")) {
                 return jsLoader.proxyInvoke(param);
             }
+            if(param.containsKey("api")){
+                if(doStr.equals("ck"))
+                    return PythonLoader.getInstance().proxyLocal("","",param);
+                SourceBean sourceBean = ApiConfig.get().getSource(doStr);
+                return PythonLoader.getInstance().proxyLocal(sourceBean.getKey(),sourceBean.getExt(),param);
+            }else{
+                if(doStr.equals("live")) return PythonLoader.getInstance().proxyLocal("","",param);
+            }
         } catch (Exception e) {
-            LOG.e("proxyLocal", e);
+            e.printStackTrace();
         }
-
+        //pyramid-add-end
         return jarLoader.proxyInvoke(param);
     }
-
     public JSONObject jsonExt(String key, LinkedHashMap<String, String> jxs, String url) {
         return jarLoader.jsonExt(key, jxs, url);
     }

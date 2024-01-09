@@ -459,7 +459,6 @@ public class OkHttpDataSource extends BaseDataSource implements HttpDataSource {
                 bytesToSkip -= read;
                 bytesTransferred(read);
             }
-            return;
         } catch (IOException e) {
             if (e instanceof HttpDataSourceException) {
                 throw (HttpDataSourceException) e;

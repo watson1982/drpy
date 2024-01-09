@@ -84,6 +84,7 @@ import com.github.tvbox.osc.util.thunder.Thunder;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
 import com.google.android.exoplayer2.Player;
 import com.google.android.exoplayer2.text.Cue;
+import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -592,8 +593,11 @@ public class PlayActivity extends BaseActivity {
                         mVideoView.setProgressKey(progressKey);
                         if (headers != null) {
                             mVideoView.setUrl(url, headers);
+                            String header = new Gson().toJson(headers);
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_PLAY_RUL, url + "@@" + header));
                         } else {
                             mVideoView.setUrl(url);
+                            EventBus.getDefault().post(new RefreshEvent(RefreshEvent.TYPE_PLAY_RUL, url));
                         }
                         mVideoView.start();
                         if(Hawk.get(HawkConfig.PLAY_SPEED, false)){
