@@ -50,6 +50,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.jieba_android.JiebaSegmenter;
 import com.jieba_android.RequestCallback;
 import com.github.tvbox.osc.util.StringUtils;
+import com.undcover.freedom.pyramid.PythonLoader;
 
 /**
  * @author pj567
@@ -526,6 +527,7 @@ public class FastSearchActivity extends BaseActivity {
                 searchExecutorService.shutdownNow();
                 searchExecutorService = null;
                 JsLoader.load();
+                PythonLoader.getInstance().load();
             }
         } catch (Throwable th) {
             th.printStackTrace();

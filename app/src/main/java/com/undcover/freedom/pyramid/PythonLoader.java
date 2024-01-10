@@ -1,7 +1,6 @@
 package com.undcover.freedom.pyramid;
 
 import android.app.Application;
-import android.content.Context;
 import android.util.Base64;
 
 import com.chaquo.python.PyObject;
@@ -19,12 +18,16 @@ public class PythonLoader {
     private static volatile PythonLoader sInstance;
     private Python pyInstance;
     private PyObject pyApp;
-    private String cache = "/storage/emulated/0/plugin/";
+    private String cache;
     private int port = -1;
-    private ConcurrentHashMap<String, Spider> spiders = new ConcurrentHashMap<>();
+    private static ConcurrentHashMap<String, Spider> spiders = new ConcurrentHashMap<>();
     private Application app;
 
     public PythonLoader() {}
+
+    public void load() {
+        spiders.clear();
+    }
 
     public static PythonLoader getInstance() {
         if (sInstance == null) {
@@ -39,6 +42,7 @@ public class PythonLoader {
 
     public PythonLoader setApplication(Application app) {
         this.app = app;
+        cache = app.getExternalCacheDir().getAbsolutePath() + "/pycache/";
         PyLog.getInstance().setLogLevel(5).setFilter(PyLog.FILTER_NW | PyLog.FILTER_LC);
         PyLog.TagConstant.TAG_APP = "PythonLoader";
         if (pyInstance == null) {
@@ -58,9 +62,8 @@ public class PythonLoader {
             return spiders.get(key);
         }
         try {
-            PyObject pySpider = pyApp.callAttr("spider", cache, key, url);
-            Spider sp = new PythonSpider(key, pyApp, pySpider);
-            sp.init(app, ext);
+            Spider sp = new PythonSpider(pyApp, key, cache, ext);
+            sp.init(app, url);
             spiders.put(key, sp);
             return sp;
         } catch (Throwable th) {

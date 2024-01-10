@@ -78,6 +78,7 @@ public class ApiConfig {
 
     private JarLoader jarLoader = new JarLoader();
     private JsLoader jsLoader = new JsLoader();
+    private PythonLoader pyLoader = PythonLoader.getInstance();
 
     private ApiConfig() {
         sourceBeanList = new LinkedHashMap<>();
@@ -271,6 +272,7 @@ public class ApiConfig {
             public void onSuccess(Response<File> response) {
                 if (response.body().exists()) {
                     jsLoader.load();
+                    pyLoader.load();
                     if (jarLoader.load(response.body().getAbsolutePath())) {
                         callback.success();
                     } else {
@@ -630,7 +632,7 @@ public class ApiConfig {
         }
         if (sourceBean.getApi().toLowerCase().endsWith(".py")) {
             try {
-                return PythonLoader.getInstance().getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt());
+                return pyLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt());
             } catch (Exception e) {
                 e.printStackTrace();
                 return new SpiderNull();
@@ -648,11 +650,11 @@ public class ApiConfig {
             }
             if(param.containsKey("api")){
                 if(doStr.equals("ck"))
-                    return PythonLoader.getInstance().proxyLocal("","",param);
+                    return pyLoader.proxyLocal("","",param);
                 SourceBean sourceBean = ApiConfig.get().getSource(doStr);
-                return PythonLoader.getInstance().proxyLocal(sourceBean.getKey(),sourceBean.getExt(),param);
+                return pyLoader.proxyLocal(sourceBean.getKey(),sourceBean.getExt(),param);
             }else{
-                if(doStr.equals("live")) return PythonLoader.getInstance().proxyLocal("","",param);
+                if(doStr.equals("live")) return pyLoader.proxyLocal("","",param);
             }
         } catch (Exception e) {
             e.printStackTrace();

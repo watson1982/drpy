@@ -3,6 +3,7 @@ package com.undcover.freedom.pyramid;
 import static org.nanohttpd.protocols.http.response.Response.newFixedLengthResponse;
 
 import android.content.Context;
+import android.net.Uri;
 
 import com.chaquo.python.PyObject;
 import com.github.catvod.crawler.Spider;
@@ -21,6 +22,7 @@ import org.nanohttpd.protocols.http.response.Status;
 
 import java.io.ByteArrayInputStream;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +33,47 @@ public class PythonSpider extends Spider {
     private PyObject pyApp;
     private PyObject pySpider;
     private String name;
+    private String cachePath;
+    private String extInfo;
 
-    public PythonSpider(String name, PyObject pyApp, PyObject pySpider) {
+
+    public PythonSpider(PyObject pyApp, String name, String cache, String ext) {
         this.pyApp = pyApp;
+        this.cachePath = cache;
         this.name = name;
-        this.pySpider = pySpider;
+        this.extInfo = ext;
     }
+    //public void init(Context context, String ext) {
+    //    pyApp.callAttr("init", pySpider, ext);
+    //}
 
-    public void init(Context context, String ext) {
-        pyApp.callAttr("init", pySpider, ext);
+    public void init(Context context, String url) {
+        PyObject retValue = pyApp.callAttr("downloadPlugin", cachePath, url);
+
+        if (null == extInfo) extInfo = "";
+
+        String path = retValue.toString();
+        File file = new File(path);
+        if (file.exists()) {
+            pySpider = pyApp.callAttr("loadFromDisk", path);
+
+            List<PyObject> poList = pyApp.callAttr("getDependence", pySpider).asList();
+            for (PyObject po : poList) {
+                String api = po.toString();
+                String depUrl = url.substring(0, url.lastIndexOf(47) + 1) + api +".py";
+                String tmpPath = pyApp.callAttr("downloadPlugin", cachePath, depUrl).toString();
+                if (!new File(tmpPath).exists()) {
+                    PyLog.d(api + "加载插件依赖失败!");
+                    //return;
+                } else {
+                    PyLog.d(api + ": 加载插件依赖成功！");
+                }
+            }
+            pyApp.callAttr("init", pySpider, extInfo);
+            PyLog.d(name + ": 下載插件成功！");
+        } else {
+            PyLog.d(name + "下载插件失败");
+        }
     }
 
     public JSONObject map2json(HashMap<String, String> extend) {

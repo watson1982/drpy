@@ -137,6 +137,7 @@ public class App extends MultiDexApplication {
     public void onTerminate() {
         super.onTerminate();
         JsLoader.load();
+        PythonLoader.getInstance().load();
         jianpian.finish();
     }
 

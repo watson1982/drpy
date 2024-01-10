@@ -71,6 +71,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.jieba_android.JiebaSegmenter;
 import com.jieba_android.RequestCallback;
+import com.undcover.freedom.pyramid.PythonLoader;
+
 import me.jessyan.autosize.utils.AutoSizeUtils;
 
 /**
@@ -648,6 +650,7 @@ public class SearchActivity extends BaseActivity {
                 sourceViewModel.shutdownNow();
                 sourceViewModel.destroyExecutor();
                 JsLoader.load();
+                PythonLoader.getInstance().load();
             }
         } catch (Throwable th) {
             th.printStackTrace();

@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+apply plugin: 'com.chaquo.python'
 
 static def getVersionName() {
     def name = "1.3"
@@ -55,6 +56,19 @@ android {
         javaCompileOptions {
             annotationProcessorOptions {
                 arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
+
+        python {
+            buildPython "D:/Python38/python.exe"
+            pip {
+                install "pycryptodome"
+                install "requests"
+                install "lxml"
+                install "jsonpath"
+                install "ujson"
+                install "pyquery"
+                install "cachetools"
             }
         }
     }
@@ -146,7 +160,14 @@ android {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
     }
-
+    sourceSets {
+        main{
+            // Android代码模块
+            setRoot "src/main"
+            // Python代码模块，也就是你的Python源码所在项目中的文件夹
+            python.srcDirs = ["src/python"]
+        }
+    }
 //    splits {
 //        abi {
 //            enable true
@@ -213,7 +234,7 @@ dependencies {
 
     //弹窗组件
     //implementation project(":XPopup")
-    implementation project(":pyramid")
+    //implementation project(":pyramid")
 
     implementation('org.xwalk:xwalk_shared_library:23.53.589.4') {
         exclude group: 'com.android.support'
