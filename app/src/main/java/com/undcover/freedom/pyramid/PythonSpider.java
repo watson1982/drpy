@@ -1,33 +1,20 @@
 package com.undcover.freedom.pyramid;
 
-import static org.nanohttpd.protocols.http.response.Response.newFixedLengthResponse;
-
 import android.content.Context;
-import android.net.Uri;
 
 import com.chaquo.python.PyObject;
 import com.github.catvod.crawler.Spider;
-import com.github.catvod.net.OkHttp;
-import com.github.tvbox.osc.util.js.Json;
-import com.google.common.net.HttpHeaders;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.github.tvbox.osc.util.LOG;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.nanohttpd.protocols.http.NanoHTTPD;
-import org.nanohttpd.protocols.http.response.Response;
-import org.nanohttpd.protocols.http.response.Status;
 
 import java.io.ByteArrayInputStream;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import okhttp3.Headers;
 
 public class PythonSpider extends Spider {
     private PyObject pyApp;
@@ -43,15 +30,11 @@ public class PythonSpider extends Spider {
         this.name = name;
         this.extInfo = ext;
     }
-    //public void init(Context context, String ext) {
-    //    pyApp.callAttr("init", pySpider, ext);
-    //}
 
     public void init(Context context, String url) {
         PyObject retValue = pyApp.callAttr("downloadPlugin", cachePath, url);
 
         if (null == extInfo) extInfo = "";
-
         String path = retValue.toString();
         File file = new File(path);
         if (file.exists()) {
@@ -60,7 +43,7 @@ public class PythonSpider extends Spider {
             List<PyObject> poList = pyApp.callAttr("getDependence", pySpider).asList();
             for (PyObject po : poList) {
                 String api = po.toString();
-                String depUrl = url.substring(0, url.lastIndexOf(47) + 1) + api +".py";
+                String depUrl = url.substring(0, url.lastIndexOf(47) + 1) + api + ".py";
                 String tmpPath = pyApp.callAttr("downloadPlugin", cachePath, depUrl).toString();
                 if (!new File(tmpPath).exists()) {
                     PyLog.d(api + "加载插件依赖失败!");
@@ -127,29 +110,26 @@ public class PythonSpider extends Spider {
     public Object[] proxyLocal(Map params) {
         PyLog.nw("localProxy", map2json(params).toString());
         List<PyObject> poList = pyApp.callAttr("localProxy", pySpider, map2json(params).toString()).asList();
-        JsonObject action = JsonParser.parseString(poList.get(2).toString()).getAsJsonObject();
-        Map<String, String> headers = Json.toMap(action.get("header"));
+
+        Map<PyObject, PyObject> headers = null;
+        if (poList.size() > 3) {
+            headers = poList.get(3).asMap();
+        }
         int code = poList.get(0).toInt();
         String type = poList.get(1).toString();
-        String content = poList.get(3).toString();
-        String url = action.get("url").getAsString();
-        try {
-            if (action.get("type").getAsString().equals("redirect")) {
-                Response response = newFixedLengthResponse(Status.lookup(code), NanoHTTPD.MIME_HTML, "");
-                for (Map.Entry<String, String> entry : headers.entrySet()) response.addHeader(entry.getKey(), entry.getValue());
-                response.addHeader(HttpHeaders.LOCATION, url);
-                return new Object[]{response};
-            } else if (action.get("type").getAsString().equals("stream")) {
-                Map<String, String> param = Json.toMap(action.get("param"));
-                return new Object[]{code, type, OkHttp.newCall(url, Headers.of(headers), param).execute().body().byteStream()};
-            } else {
-                if (content.isEmpty()) content = OkHttp.newCall(url, Headers.of(headers)).execute().body().string();
-                return new Object[]{code, type, new ByteArrayInputStream(replaceLocalUrl(content).getBytes())};
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
+
+        PyObject r2 = poList.get(2);
+        if (r2 == null){
+            return new Object[]{code, type, null, headers};
         }
-        return new Object[]{code, type, null};
+        LOG.e("PyType", poList.get(2).type().toString());
+        if (r2.type().toString().contains("str")) {
+            return new Object[]{code, type, new ByteArrayInputStream(replaceLocalUrl(r2.toString()).getBytes()), headers};
+        } else if(r2.type().toString().contains("bytes")){
+            return new Object[]{code, type, new ByteArrayInputStream(r2.toJava(byte[].class)), headers};
+        }
+        LOG.e("不支持此类型:" + poList.get(2).type());
+        return new Object[]{code, type, null, headers};
     }
 
     public String replaceLocalUrl(String content) {
@@ -251,7 +231,11 @@ public class PythonSpider extends Spider {
      * @return
      */
     public boolean isVideoFormat(String url) {
-        return false;
+        PyLog.nw("isVideoFormat" + "-" + name, url);
+        PyObject po = pyApp.callAttr("isVideoFormat", pySpider, url);
+        boolean rsp = po.toBoolean();
+        PyLog.nw("isVideoFormat" + "-" + name, rsp + "");
+        return rsp;
     }
 
     /**
@@ -260,6 +244,10 @@ public class PythonSpider extends Spider {
      * @return
      */
     public boolean manualVideoCheck() {
-        return false;
+        PyObject po = pyApp.callAttr("manualVideoCheck", pySpider);
+        boolean rsp = po.toBoolean();
+        PyLog.nw("manualVideoCheck" + "-" + name, rsp + "");
+        return rsp;
     }
+
 }

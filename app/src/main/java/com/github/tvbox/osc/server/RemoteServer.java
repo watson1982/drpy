@@ -1,10 +1,13 @@
 package com.github.tvbox.osc.server;
 
+import static org.nanohttpd.protocols.http.response.Response.newFixedLengthResponse;
+
 import android.content.Context;
 import android.os.Environment;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.chaquo.python.PyObject;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
 import com.github.tvbox.osc.event.InputMsgEvent;
@@ -194,7 +197,7 @@ public class RemoteServer extends NanoHTTPD {
      * @return
      */
     private Response responseCORS(IHTTPSession session) {
-        Response resp = wrapResponse(session,Response.newFixedLengthResponse(""));
+        Response resp = wrapResponse(session, newFixedLengthResponse(""));
         Map<String, String> headers = session.getHeaders();
         resp.addHeader("Access-Control-Allow-Methods",
                 noCORS ? ALLOW_METHODS : ALLOW_METHODS_CORS);
@@ -283,12 +286,12 @@ public class RemoteServer extends NanoHTTPD {
             }
             Map<String, String> headers = session.getHeaders();
             if (!"13".equalsIgnoreCase(headers.get("sec-websocket-version"))) {
-                return Response.newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT,
+                return newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT,
                         "Invalid Websocket-Version " + headers.get("sec-websocket-version"));
             }
 
             if (!headers.containsKey("sec-websocket-key")) {
-                return Response.newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT, "Missing Websocket-Key");
+                return newFixedLengthResponse(Status.BAD_REQUEST, NanoHTTPD.MIME_PLAINTEXT, "Missing Websocket-Key");
             }
 
             WebSocket webSocket = new DebugWebSocket(session);
@@ -296,7 +299,7 @@ public class RemoteServer extends NanoHTTPD {
             try {
                 handshakeResponse.addHeader("sec-websocket-accept", makeAcceptKey(headers.get("sec-websocket-key")));
             } catch (NoSuchAlgorithmException e) {
-                return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT,
+                return newFixedLengthResponse(Status.INTERNAL_ERROR, NanoHTTPD.MIME_PLAINTEXT,
                         "The SHA-1 Algorithm required for websockets is not available on the server.");
             }
 
@@ -330,14 +333,19 @@ public class RemoteServer extends NanoHTTPD {
                                 int code = (int) rs[0];
                                 String mime = (String) rs[1];
                                 InputStream stream = rs[2] != null ? (InputStream) rs[2] : null;
-                                return Response.newChunkedResponse(
-                                        Status.lookup(code),
-                                        mime,
-                                        stream
-                                );
+
+                                Response r = Response.newChunkedResponse(Status.lookup(code), mime, stream);
+                                Map<PyObject, PyObject> headers;
+                                if(rs.length > 3 && rs[3] != null){
+                                    headers = (Map) rs[3];
+                                    for (Map.Entry<PyObject, PyObject> entry : headers.entrySet()) {
+                                        r.addHeader(entry.getKey().toString(), entry.getValue().toString());
+                                    }
+                                }
+                                return r;
                             } catch (Throwable th) {
                                 EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", "proxy") + Log.getStackTraceString(th)));
-                                return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "500");
+                                return newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "500");
                             }
                         }
                     } else if (fileName.startsWith("/file/")) {
@@ -350,13 +358,13 @@ public class RemoteServer extends NanoHTTPD {
                                 if (localFile.isFile()) {
                                     return Response.newChunkedResponse(Status.OK, "application/octet-stream", new FileInputStream(localFile));
                                 } else {
-                                    return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, fileList(root, f));
+                                    return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, fileList(root, f));
                                 }
                             } else {
-                                return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "File " + file + " not found!");
+                                return newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, "File " + file + " not found!");
                             }
                         } catch (Throwable th) {
-                            return Response.newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, th.getMessage());
+                            return newFixedLengthResponse(Status.INTERNAL_ERROR, MIME_PLAINTEXT, th.getMessage());
                         }
                     } else if (fileName.equals("/dns-query")) {
                         String name = session.getParms().get("name");
@@ -366,7 +374,7 @@ public class RemoteServer extends NanoHTTPD {
                         } catch (Throwable th) {
                             rs = new byte[0];
                         }
-                        return Response.newFixedLengthResponse(Status.OK, "application/dns-message", new ByteArrayInputStream(rs), rs.length);
+                        return newFixedLengthResponse(Status.OK, "application/dns-message", new ByteArrayInputStream(rs), rs.length);
                     }
                 } else if (session.getMethod() == Method.POST) {
                     Map<String, String> files = new HashMap<String, String>();
@@ -420,7 +428,7 @@ public class RemoteServer extends NanoHTTPD {
                                             tmp.delete();
                                     }
                                 }
-                                return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+                                return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
                             }
                             case "/newFolder": {
                                 String path = params.get("path");
@@ -433,7 +441,7 @@ public class RemoteServer extends NanoHTTPD {
                                     if (!flag.exists())
                                         flag.createNewFile();
                                 }
-                                return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+                                return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
                             }
                             case "/delFolder": {
                                 String path = params.get("path");
@@ -442,7 +450,7 @@ public class RemoteServer extends NanoHTTPD {
                                 if (file.exists()) {
                                     FileUtils.recursiveDelete(file);
                                 }
-                                return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+                                return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
                             }
                             case "/delFile": {
                                 String path = params.get("path");
@@ -451,11 +459,11 @@ public class RemoteServer extends NanoHTTPD {
                                 if (file.exists()) {
                                     file.delete();
                                 }
-                                return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+                                return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
                             }
                         }
                     } catch (Throwable th) {
-                        return Response.newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
+                        return newFixedLengthResponse(Status.OK, MIME_PLAINTEXT, "OK");
                     }
                 }
             }
@@ -486,11 +494,11 @@ public class RemoteServer extends NanoHTTPD {
     }
 
     public static Response createPlainTextResponse(IStatus status, String text) {
-        return Response.newFixedLengthResponse(status, MIME_PLAINTEXT, text);
+        return newFixedLengthResponse(status, MIME_PLAINTEXT, text);
     }
 
     public static Response createJSONResponse(IStatus status, String text) {
-        return Response.newFixedLengthResponse(status, "application/json", text);
+        return newFixedLengthResponse(status, "application/json", text);
     }
 
     String fileTime(long time, String fmt) {

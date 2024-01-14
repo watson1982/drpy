@@ -144,6 +144,6 @@ public class JsLoader {
         } catch (Throwable th) {
             LOG.e("proxyInvoke", th);
         }
-        return null;
+        return new Object[]{};
     }
 }

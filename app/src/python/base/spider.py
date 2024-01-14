@@ -9,6 +9,7 @@ import hashlib
 import re
 import json
 import zlib
+import gzip
 
 import requests
 import warnings
@@ -28,11 +29,14 @@ from Crypto.PublicKey import RSA
 
 try:
     from com.github.tvbox.osc.util import LOG
+    from com.github.tvbox.osc.util import PyUtil
 
+    _ENV = 'T3'
     _log = LOG.e
 except ImportError:
+    _ENV = 'T4'
     _log = print
-	
+
 # 关闭警告
 warnings.filterwarnings("ignore")
 requests.packages.urllib3.disable_warnings()
@@ -40,9 +44,14 @@ requests.packages.urllib3.disable_warnings()
 
 class BaseSpider(metaclass=ABCMeta):  # 元类 默认的元类 type
     _instance = None
+    ENV: str
 
-    def __init__(self, query_params=None):
+    def __init__(self, query_params=None, t4_api=None):
         self.query_params = query_params or {}
+        self.t4_api = t4_api or ''
+        self.extend = ''
+        self.ENV = _ENV
+        # self.log(f't4_api:{t4_api}')
 
     def __new__(cls, *args, **kwargs):
         if cls._instance:
@@ -85,7 +94,7 @@ class BaseSpider(metaclass=ABCMeta):  # 元类 默认的元类 type
         pass
 
     @abstractmethod
-    def localProxy(self, param):
+    def localProxy(self, params):
         pass
 
     @abstractmethod
@@ -102,6 +111,20 @@ class BaseSpider(metaclass=ABCMeta):  # 元类 默认的元类 type
 
     def init_api_ext_file(self):
         pass
+
+    def getProxyUrl(self):
+        """
+        获取本地代理地址
+        @return:
+        """
+        if self.ENV.lower() == 't3':
+            # return getProxy(True)
+            return PyUtil.getProxy(False)
+            # return 'http://127.0.0.1:9978/proxy?do=py'
+        elif self.ENV.lower() == 't4':
+            return self.t4_api
+        else:
+            return ''
 
     def getDependence(self):
         return []
@@ -180,7 +203,26 @@ class BaseSpider(metaclass=ABCMeta):  # 元类 默认的元类 type
             msg = f'{msg}'
 
         _log(msg)
-		
+
+    @staticmethod
+    def isVideo():
+        """
+        返回是否为视频的匹配字符串
+        @return: None空 reg:正则表达式  js:input js代码
+        """
+        pass
+
+    @staticmethod
+    def replaceAll(text, mtext, rtext):
+        """
+        字符串替换全部
+        @param text: 原始字符串: 如 xxx.ts
+        @param mtext: 匹配想要替换的字符串 如 r'(.*?ts)'
+        @param rtext: 用于替换的字符串 如 r'https://www.bdys03.com/\1' 其中\1代表匹配的第1项类似于js的 $1
+        @return: 替换后的字符串结果
+        """
+        return re.sub(mtext, rtext, text)
+
     @staticmethod
     def str2json(str):
         return json.loads(str)
@@ -281,6 +323,45 @@ class BaseSpider(metaclass=ABCMeta):  # 元类 默认的元类 type
         @return:
         """
         return zlib.decompress(compressed, -zlib.MAX_WBITS)
+
+    @staticmethod
+    def gzipCompress(compressed: bytes) -> bytes:
+        """
+        gzip解压
+        @param compressed: 压缩后的字节
+        @return:
+        """
+        return gzip.decompress(compressed)
+
+    @staticmethod
+    def bytes2stream(some_bytes: bytes):
+        """
+        字节转文件流
+        @param some_bytes:
+        @return:
+        """
+        return io.BytesIO(some_bytes)
+
+    @staticmethod
+    def stream2bytes(some_stream):
+        """
+        文件流转字节
+        @param some_stream:
+        @return:
+        """
+        return some_stream.read()
+
+    def skip_bytes(self, some_bytes: bytes, pos=0) -> bytes:
+        """
+        跳过位置之前的字节并返回
+        @param some_bytes:
+        @param pos: 待跳过的位置，默认0不跳过
+        @return:
+        """
+
+        some_stream = self.bytes2stream(some_bytes)
+        some_stream.seek(pos)
+        return self.stream2bytes(some_stream)
 
     @staticmethod
     def base64Encode(text):
@@ -427,7 +508,31 @@ class BaseSpider(metaclass=ABCMeta):  # 元类 默认的元类 type
         ciphertext = rsa_text.decode("utf8")
         return ciphertext
 
+    @staticmethod
+    def remove_comments(text):
+        """
+        字符串删除注释
+        @param text:带注释的字符串
+        @return:
+        """
+
+        pattern = re.compile(r'\s*[\'\"]{3}[\S\s]*?[\'\"]{3}')
+        text = pattern.sub('', text)
+        pattern = re.compile(r'\s*/\*[\S\s]*?\*/')
+        text = pattern.sub('', text)
+        text = text.splitlines()
+        text = [txt for txt in text if not (txt.strip().startswith('//') or txt.strip().startswith('#'))]
+        text = '\n'.join(text)
+        return text.strip()
+
     # ==================== 个性化函数 ======================
+    def superStr2dict(self, text: str):
+        text = self.remove_comments(text)
+        localdict = {'true': True, 'false': False, 'null': None}
+        self.safe_eval(f'result={text}', localdict)
+        result = localdict.get('result') or {}
+        return result
+
     def eval_computer(self, text):
         """
         自定义的字符串安全计算器

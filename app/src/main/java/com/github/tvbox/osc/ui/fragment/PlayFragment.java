@@ -116,6 +116,7 @@ import xyz.doikki.videoplayer.player.AbstractPlayer;
 import xyz.doikki.videoplayer.player.ProgressManager;
 
 public class PlayFragment extends BaseLazyFragment {
+    public static final String FRAGMENT_TAG = "mPlayFragment";
     private MyVideoView mVideoView;
     private TextView mPlayLoadTip;
     private ImageView mPlayLoadErr;
@@ -139,6 +140,8 @@ public class PlayFragment extends BaseLazyFragment {
     public VodController getVodController() {
         return mController;
     }
+
+    public MyVideoView getVideoView() {return mVideoView;}
 
     private void initView() {
         mHandler = new Handler(new Handler.Callback() {
@@ -654,7 +657,7 @@ public class PlayFragment extends BaseLazyFragment {
             }
         }
     }
-
+    String isVideo;
     private void initViewModel() {
         sourceViewModel = new ViewModelProvider(this).get(SourceViewModel.class);
         sourceViewModel.playResult.observe(this, new Observer<JSONObject>() {
@@ -696,6 +699,9 @@ public class PlayFragment extends BaseLazyFragment {
                         //    webUserAgent = UA.random();
                         //}
                         if (parse || jx) {
+                            if(parse){
+                                isVideo = info.optString("isVideo", "");
+                            }
                             boolean userJxList = (playUrl.isEmpty() && ApiConfig.get().getVipParseFlags().contains(flag)) || jx;
                             initParse(flag, userJxList, playUrl, url);
                         } else {
@@ -1533,6 +1539,17 @@ public class PlayFragment extends BaseLazyFragment {
                 return new WebResourceResponse("image/png", null, null);
             }
             LOG.i("shouldInterceptRequest url:" + url);
+            boolean isVid = VideoParseRuler.IsVideoRules(isVideo, url);
+            if (isVid) {
+                LOG.e("isVideo", isVideo + "\r\nurl" + url);
+                mHandler.removeMessages(100);
+                loadFound = true;
+                String cookie = CookieManager.getInstance().getCookie(url);
+                if(!TextUtils.isEmpty(cookie))headers.put("Cookie", " " + cookie);//携带cookie
+                playUrl(url, headers);
+                stopLoadWebView(false);
+            }
+
             boolean isFilter = VideoParseRuler.isFilter(webUrl, url);
             if (isFilter) {
                 LOG.i( "shouldInterceptLoadRequest filter:" + url);
@@ -1704,6 +1721,29 @@ public class PlayFragment extends BaseLazyFragment {
                 return createXWalkWebResourceResponse("image/png", null, null);
             }
             LOG.i("shouldInterceptLoadRequest url:" + url);
+            boolean isVid = VideoParseRuler.IsVideoRules(isVideo, url);
+            if (isVid) {
+                LOG.e("isVideo", isVideo + "\r\nurl" + url);
+                mHandler.removeMessages(100);
+                loadFound = true;
+                HashMap<String, String> webHeaders = new HashMap<>();
+                try {
+                    Map<String, String> hds = request.getRequestHeaders();
+                    for (String k : hds.keySet()) {
+                        if (k.equalsIgnoreCase("user-agent")
+                                || k.equalsIgnoreCase("referer")
+                                || k.equalsIgnoreCase("origin")) {
+                            webHeaders.put(k, " " + hds.get(k));
+                        }
+                    }
+                } catch (Throwable th) {
+
+                }
+                String cookie = CookieManager.getInstance().getCookie(url);
+                if(!TextUtils.isEmpty(cookie))webHeaders.put("Cookie", " " + cookie);//携带cookie
+                stopLoadWebView(false);
+            }
+
             boolean isFilter = VideoParseRuler.isFilter(webUrl, url);
             if (isFilter) {
                 LOG.i( "shouldInterceptLoadRequest filter:" + url);

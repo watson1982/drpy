@@ -3,14 +3,6 @@ import requests
 from importlib.machinery import SourceFileLoader
 import json
 
-
-def spider(cache, key, api):
-    name = os.path.basename(api)
-    path = cache + '/' + name
-    downloadFile(path, api)
-    return SourceFileLoader(name, path).load_module().Spider()
-
-
 def downloadFile(name, api):
     if api.startswith('http'):
         r = redirect(api)
@@ -61,7 +53,6 @@ def downloadPlugin(basePath, url):
     # sParam[name] = paramList[0]
     return pyName
 
-
 def loadFromDisk(fileName):
     name = fileName.split('/')[-1].split('.')[0]
     spList = gParam['SpiderList']
@@ -70,10 +61,8 @@ def loadFromDisk(fileName):
         spList[name] = sp
     return spList[name]
 
-
 def str2json(content):
     return json.loads(content)
-
 
 gParam = {
     "SpiderList": {},
@@ -81,11 +70,9 @@ gParam = {
     # "SpiderParam": {}
 }
 
-
 def getDependence(ru):
     result = ru.getDependence()
     return result
-
 
 def init(ru, extend):
     spoList = []
@@ -104,12 +91,10 @@ def init(ru, extend):
     ru.setExtendInfo(extend)
     ru.init(spoList)
 
-
 def homeContent(ru, filter):
     result = ru.homeContent(filter)
     formatJo = json.dumps(result, ensure_ascii=False)
     return formatJo
-
 
 def homeVideoContent(ru):
     result = ru.homeVideoContent()
@@ -122,39 +107,40 @@ def categoryContent(ru, tid, pg, filter, extend):
     formatJo = json.dumps(result, ensure_ascii=False)
     return formatJo
 
-
 def detailContent(ru, array):
     result = ru.detailContent(str2json(array))
     formatJo = json.dumps(result, ensure_ascii=False)
     return formatJo
 
-
 def playerContent(ru, flag, id, vipFlags):
     result = ru.playerContent(flag, id, str2json(vipFlags))
+    if str(result.get('parse')) == '1' and not result.get('isVideo'):
+        result['isVideo'] = ru.isVideo()
     formatJo = json.dumps(result, ensure_ascii=False)
     return formatJo
-
 
 def searchContent(ru, key, quick):
     result = ru.searchContent(key, quick)
     formatJo = json.dumps(result, ensure_ascii=False)
     return formatJo
 
-
 def searchContentPage(ru, key, quick, pg):
     result = ru.searchContentPage(key, quick, pg)
     formatJo = json.dumps(result, ensure_ascii=False)
     return formatJo
+	
+def isVideoFormat(ru, url):
+    return ru.isVideoFormat(url)
 
-
+def manualVideoCheck(ru):
+    return ru.manualVideoCheck()
+		
 def localProxy(ru, param):
     result = ru.localProxy(str2json(param))
     return result
 
-
 def run():
     pass
-
 
 if __name__ == '__main__':
     run()

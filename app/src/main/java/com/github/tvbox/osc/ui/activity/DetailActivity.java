@@ -90,6 +90,7 @@ import me.jessyan.autosize.utils.AutoSizeUtils;
  * @description:
  */
 public class DetailActivity extends BaseActivity {
+    private static final int DETAIL_PLAYER_FRAME_ID = 9999999;
     private static final int PIP_BOARDCAST_ACTION_PREV = 0;
     private static final int PIP_BOARDCAST_ACTION_PLAYPAUSE = 1;
     private static final int PIP_BOARDCAST_ACTION_NEXT = 2;

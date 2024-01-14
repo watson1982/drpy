@@ -1,6 +1,12 @@
 package com.github.tvbox.osc.util;
 
 import android.net.Uri;
+import android.text.TextUtils;
+
+import com.whl.quickjs.wrapper.QuickJSContext;
+
+import org.json.JSONException;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.regex.Pattern;
@@ -108,6 +114,28 @@ public class VideoParseRuler {
             return isFilter;
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        return false;
+    }
+
+    public static boolean IsVideoRules(String isVideo, String url) {
+        if(!TextUtils.isEmpty(isVideo)){
+            if(isVideo.startsWith("js:")){
+                isVideo = isVideo.substring(3);
+                try {
+                    QuickJSContext jSContext = QuickJSContext.create();
+                    //jSContext.getGlobalObject().set("input", url);
+                    return (boolean) jSContext.evaluate("var input = '" + url + "';\n" + isVideo);
+                } catch (Exception e) {
+                    LOG.e(e);
+                    return false;
+                }
+            }
+            if(isVideo.startsWith("reg:")){
+                isVideo = isVideo.substring(4);
+                Pattern onePattern = Pattern.compile(isVideo);
+                return onePattern.matcher(url).find();
+            }
         }
         return false;
     }

@@ -627,10 +627,10 @@ public class ApiConfig {
     }
 
     public Spider getCSP(SourceBean sourceBean) {
-        if (sourceBean.getApi().toLowerCase().endsWith(".js")) {
+        if (sourceBean.getApi().toLowerCase().contains(".js")) {
             return jsLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
         }
-        if (sourceBean.getApi().toLowerCase().endsWith(".py")) {
+        if (sourceBean.getApi().toLowerCase().contains(".py")) {
             try {
                 return pyLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt());
             } catch (Exception e) {
@@ -641,27 +641,28 @@ public class ApiConfig {
         return jarLoader.getSpider(sourceBean.getKey(), sourceBean.getApi(), sourceBean.getExt(), sourceBean.getJar());
     }
 
-    public Object[] proxyLocal(Map<String, String> param) {
-        //pyramid-add-start
+    public Object[] proxyLocal(Map<String, String> params) {
         try {
-            String doStr = param.get("do");
-            if (doStr.equals("js")) {
-                return jsLoader.proxyInvoke(param);
-            }
-            if(param.containsKey("api")){
-                if(doStr.equals("ck"))
-                    return pyLoader.proxyLocal("","",param);
-                SourceBean sourceBean = ApiConfig.get().getSource(doStr);
-                return pyLoader.proxyLocal(sourceBean.getKey(),sourceBean.getExt(),param);
-            }else{
-                if(doStr.equals("live")) return pyLoader.proxyLocal("","",param);
+            String what = params.containsKey("do") ? params.get("do") : "";
+            switch (what) {
+                case "js":
+                    return jsLoader.proxyInvoke(params);
+                case "py":
+                    return pyLoader.proxyLocal(params);
+                case "live":
+                    String type = params.get("type");
+                    if (type.equals("txt")) {
+                        String ext = params.get("ext");
+                        ext = new String(Base64.decode(ext, Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP), "UTF-8");
+                        return TxtSubscribe.load(ext);
+                    }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        //pyramid-add-end
-        return jarLoader.proxyInvoke(param);
+        return jarLoader.proxyInvoke(params);
     }
+
     public JSONObject jsonExt(String key, LinkedHashMap<String, String> jxs, String url) {
         return jarLoader.jsonExt(key, jxs, url);
     }

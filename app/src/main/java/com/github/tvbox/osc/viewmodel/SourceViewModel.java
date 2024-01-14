@@ -33,6 +33,7 @@ import com.google.gson.reflect.TypeToken;
 import com.lzy.okgo.OkGo;
 import com.lzy.okgo.callback.AbsCallback;
 import com.lzy.okgo.model.Response;
+import com.lzy.okgo.request.base.Request;
 import com.orhanobut.hawk.Hawk;
 import com.thoughtworks.xstream.XStream;
 import com.thoughtworks.xstream.io.xml.DomDriver;
@@ -202,7 +203,16 @@ public class SourceViewModel extends ViewModel {
                         }
                     });
         } else if (type == 4) {
-            OkGo.<String>get(sourceBean.getApi())
+            String extend = sourceBean.getExt();
+            extend = getFixUrl(extend);
+
+            Request<String, ?> request;
+            if (URLEncoder.encode(extend).length()>1000) {
+                request = OkGo.post(sourceBean.getApi());
+            } else {
+                request = OkGo.get(sourceBean.getApi());
+            }
+            request.params("extend", extend)
                     .tag(sourceBean.getKey() + "_sort")
                     .params("filter", "true")
                     .execute(new AbsCallback<String>() {
@@ -320,7 +330,16 @@ public class SourceViewModel extends ViewModel {
                     e.printStackTrace();
                 }
             }
-            OkGo.<String>get(homeSourceBean.getApi())
+            String extend = homeSourceBean.getExt();
+            extend = getFixUrl(extend);
+
+            Request<String, ?> request;
+            if (URLEncoder.encode(extend).length()>1000) {
+                request = OkGo.post(homeSourceBean.getApi());
+            } else {
+                request = OkGo.get(homeSourceBean.getApi());
+            }
+            request.params("extend", extend)
                     .tag(homeSourceBean.getApi())
                     .params("ac", "detail")
                     .params("filter", "true")
@@ -481,7 +500,16 @@ public class SourceViewModel extends ViewModel {
                 }
             });
         } else if (type == 0 || type == 1 || type == 4) {
-            OkGo.<String>get(sourceBean.getApi())
+            String extend = sourceBean.getExt();
+            extend = getFixUrl(extend);
+
+            Request<String, ?> request;
+            if (URLEncoder.encode(extend).length()>1000) {
+                request = OkGo.post(sourceBean.getApi());
+            } else {
+                request = OkGo.get(sourceBean.getApi());
+            }
+            request.params("extend", extend)
                     .tag("detail")
                     .params("ac", type == 0 ? "videolist" : "detail")
                     .params("ids", id)
@@ -573,7 +601,16 @@ public class SourceViewModel extends ViewModel {
                         }
                     });
         } else if (type == 4) {
-            OkGo.<String>get(sourceBean.getApi())
+            String extend = sourceBean.getExt();
+            extend = getFixUrl(extend);
+
+            Request<String, ?> request;
+            if (URLEncoder.encode(extend).length()>1000) {
+                request = OkGo.post(sourceBean.getApi());
+            } else {
+                request = OkGo.get(sourceBean.getApi());
+            }
+            request.params("extend", extend)
                     .params("wd", wd)
                     .params("ac", "detail")
                     .params("quick", "false")
@@ -657,7 +694,16 @@ public class SourceViewModel extends ViewModel {
                         }
                     });
         } else if (type == 4) {
-            OkGo.<String>get(sourceBean.getApi())
+            String extend = sourceBean.getExt();
+            extend = getFixUrl(extend);
+
+            Request<String, ?> request;
+            if (URLEncoder.encode(extend).length()>1000) {
+                request = OkGo.post(sourceBean.getApi());
+            } else {
+                request = OkGo.get(sourceBean.getApi());
+            }
+            request.params("extend", extend)
                     .params("wd", wd)
                     .params("ac", "detail")
                     .params("quick", "true")
@@ -788,13 +834,18 @@ public class SourceViewModel extends ViewModel {
                 LOG.e(th);
             }
         } else if (type == 4) {
-            String extend=sourceBean.getExt();
-            extend=getFixUrl(extend);
-            if(URLEncoder.encode(extend).length()>1000)extend="";
-            OkGo.<String>get(sourceBean.getApi())
+            String extend = sourceBean.getExt();
+            extend = getFixUrl(extend);
+
+            Request<String, ?> request;
+            if (URLEncoder.encode(extend).length()>1000) {
+                request = OkGo.post(sourceBean.getApi());
+            } else {
+                request = OkGo.get(sourceBean.getApi());
+            }
+            request.params("extend", extend)
                     .params("play", url)
                     .params("flag", playFlag)
-                    .params("extend", extend)
                     .tag("play")
                     .execute(new AbsCallback<String>() {
                         @Override

@@ -3,6 +3,7 @@ package com.github.catvod.crawler;
 import android.content.Context;
 
 import com.github.tvbox.osc.base.App;
+import com.github.tvbox.osc.reflect.Reflect;
 import com.github.tvbox.osc.util.MD5;
 import com.lzy.okgo.OkGo;
 import com.github.tvbox.osc.util.StringUtils;
@@ -52,6 +53,7 @@ public class JarLoader {
             int count = 0;
             do {
                 try {
+
                     Class classInit = classLoader.loadClass("com.github.catvod.spider.Init");
                     if (classInit != null) {
                         Method method = classInit.getMethod("init", Context.class);
@@ -144,7 +146,8 @@ public class JarLoader {
         if (classLoader == null)
             return new SpiderNull();
         try {
-            Spider sp = (Spider) classLoader.loadClass("com.github.catvod.spider." + clsKey).newInstance();
+            Spider sp = Reflect.onClass(classLoader.loadClass("com.github.catvod.spider." + clsKey)).create().get();
+            //Spider sp = (Spider) classLoader.loadClass("com.github.catvod.spider." + clsKey).newInstance();
             sp.init(App.getInstance(), ext);
             if (!StringUtils.isEmpty(jar)) {
                 sp.homeContent(false); // 增加此行 应该可以解决部分写的有问题源的历史记录问题 但会增加这个源的首次加载时间 不需要可以已删掉
