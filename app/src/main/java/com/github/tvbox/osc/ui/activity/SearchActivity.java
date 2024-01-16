@@ -5,7 +5,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
+import android.text.Editable;
 import android.text.TextUtils;
+import android.text.TextWatcher;
+import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -13,6 +16,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -29,6 +33,8 @@ import com.github.tvbox.osc.base.BaseActivity;
 import com.github.tvbox.osc.bean.AbsXml;
 import com.github.tvbox.osc.bean.Movie;
 import com.github.tvbox.osc.bean.SourceBean;
+import com.github.tvbox.osc.cache.SearchHistory;
+import com.github.tvbox.osc.data.SearchPresenter;
 import com.github.tvbox.osc.event.InputMsgEvent;
 import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.event.ServerEvent;
@@ -40,6 +46,7 @@ import com.github.tvbox.osc.ui.dialog.RemoteDialog;
 import com.github.tvbox.osc.ui.dialog.SearchCheckboxDialog;
 import com.github.tvbox.osc.ui.dialog.SelectDialog;
 import com.github.tvbox.osc.ui.tv.QRCodeGen;
+import com.github.tvbox.osc.ui.tv.widget.CustomEditText;
 import com.github.tvbox.osc.ui.tv.widget.SearchKeyboard;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
@@ -65,6 +72,7 @@ import org.greenrobot.eventbus.ThreadMode;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -72,6 +80,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import com.jieba_android.JiebaSegmenter;
 import com.jieba_android.RequestCallback;
 import com.undcover.freedom.pyramid.PythonLoader;
+import com.yang.flowlayoutlibrary.FlowLayout;
 
 import me.jessyan.autosize.utils.AutoSizeUtils;
 
@@ -84,8 +93,8 @@ public class SearchActivity extends BaseActivity {
     private LinearLayout llLayout;
     private TvRecyclerView mGridView;
     private TvRecyclerView mGridViewWord;
-    SourceViewModel sourceViewModel;
-    private EditText etSearch;
+    private SourceViewModel sourceViewModel;
+    private CustomEditText etSearch;
     private TextView tvSearch;
     private TextView tvClear;
     private SearchKeyboard keyboard;
@@ -94,12 +103,18 @@ public class SearchActivity extends BaseActivity {
     private SearchAdapter searchAdapter;
     private PinyinAdapter wordAdapter;
     private String searchTitle = "";
-    private TextView tvSearchCheckboxBtn;
+    private ImageView tvSearchCheckboxBtn;
     private TextView filterBtn;
 
-    //private List<SourceBean> requestList = new ArrayList<>();
+    private RelativeLayout searchTips;
+    private FlowLayout tv_history;
+
+    private TextView clearHistory;
+    private SearchPresenter searchPresenter;
+
     private List<String> fenci;
     private String sKey;
+    public String keyword;
 
     private HashMap<String, String> mCheckSources = null;
     private SearchCheckboxDialog mSearchCheckboxDialog = null;
@@ -143,6 +158,13 @@ public class SearchActivity extends BaseActivity {
         imm.showSoftInput(this.getCurrentFocus(), InputMethodManager.SHOW_FORCED);
     }
 
+    public void hideSystemKeyBoard() {
+        InputMethodManager imm = (InputMethodManager) this.getSystemService(Context.INPUT_METHOD_SERVICE);
+        if(imm.isActive()){
+            imm.hideSoftInputFromWindow(etSearch.getApplicationWindowToken(), InputMethodManager.RESULT_UNCHANGED_SHOWN);
+        }
+    }
+
     private List<Runnable> pauseRunnable = null;
 
     @Override
@@ -163,16 +185,22 @@ public class SearchActivity extends BaseActivity {
 
     private void initView() {
         EventBus.getDefault().register(this);
+
         llLayout = findViewById(R.id.llLayout);
         etSearch = findViewById(R.id.etSearch);
         tvSearch = findViewById(R.id.tvSearch);
-        tvSearchCheckboxBtn = findViewById(R.id.tvSearchCheckboxBtn);
+        tvSearchCheckboxBtn = findViewById(R.id.tvSearchCheckbox);
         filterBtn = findViewById(R.id.filterBtn);
+
+        searchTips = findViewById(R.id.search_tips);
+        tv_history = findViewById(R.id.tv_history);
+        clearHistory = findViewById(R.id.clear_history);
 
         tvClear = findViewById(R.id.tvClear);
         tvAddress = findViewById(R.id.tvAddress);
         ivQRCode = findViewById(R.id.ivQRCode);
         mGridView = findViewById(R.id.mGridView);
+
         keyboard = findViewById(R.id.keyBoardRoot);
         mGridViewWord = findViewById(R.id.mGridViewWord);
         mGridViewWord.setHasFixedSize(true);
@@ -182,10 +210,13 @@ public class SearchActivity extends BaseActivity {
         wordAdapter.setOnItemClickListener(new BaseQuickAdapter.OnItemClickListener() {
             @Override
             public void onItemClick(BaseQuickAdapter adapter, View view, int position) {
-                search(wordAdapter.getItem(position));
+                keyword = wordAdapter.getItem(position);
+                etSearch.setText(keyword);
+                search(keyword);
             }
         });
         mGridView.setHasFixedSize(true);
+
         // lite
         if (Hawk.get(HawkConfig.SEARCH_VIEW, 0) == 0)
             mGridView.setLayoutManager(new V7LinearLayoutManager(this.mContext, 1, false));
@@ -216,13 +247,13 @@ public class SearchActivity extends BaseActivity {
                 }
             }
         });
+
         tvSearch.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 FastClickCheckUtil.check(v);
-                String wd = etSearch.getText().toString().trim();
-                if (!TextUtils.isEmpty(wd)) {
-                    search(wd);
+                if (!TextUtils.isEmpty(keyword)) {
+                    search(keyword);
                 } else {
                     Toast.makeText(mContext, "输入内容不能为空", Toast.LENGTH_SHORT).show();
                 }
@@ -233,6 +264,33 @@ public class SearchActivity extends BaseActivity {
             public void onClick(View v) {
                 FastClickCheckUtil.check(v);
                 etSearch.setText("");
+                cancel();
+            }
+        });
+        this.etSearch.addTextChangedListener(new TextWatcher() {
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            public void afterTextChanged(Editable s) {
+                keyword = s.toString().trim();
+                if (TextUtils.isEmpty(keyword)) {
+                    cancel();
+                    tv_history.setVisibility(View.VISIBLE);
+                    searchTips.setVisibility(View.VISIBLE);
+                    mGridView.setVisibility(View.GONE);
+                }
+            }
+        });
+        etSearch.setOnKeyListener(new View.OnKeyListener() {
+            @Override
+            public boolean onKey(View v, int keyCode, KeyEvent event) {
+                if(keyCode == KeyEvent.KEYCODE_ENTER){
+                    hideSystemKeyBoard();
+                }
+                return false;
             }
         });
         etSearch.setOnClickListener(new View.OnClickListener() {
@@ -245,6 +303,10 @@ public class SearchActivity extends BaseActivity {
             }
         });
 
+        clearHistory.setOnClickListener(v -> {
+            searchPresenter.clearSearchHistory();
+            initSearchHistory();
+        });
 //        etSearch.setOnFocusChangeListener(tvSearchFocusChangeListener);
         keyboard.setOnSearchKeyListener(new SearchKeyboard.OnSearchKeyListener() {
             @Override
@@ -282,6 +344,8 @@ public class SearchActivity extends BaseActivity {
             SourceBean sourceBean = ApiConfig.get().getSource(this.sKey);
             string = sourceBean != null ? sourceBean.getName() : "全局搜索";
         }
+
+        filterBtn.setSelected(true);//能动起来的关键代码
         filterBtn.setText(string);
         filterBtn.setOnClickListener(new View.OnClickListener() {
 
@@ -390,9 +454,32 @@ public class SearchActivity extends BaseActivity {
         });
     }
 
+    private void refreshSearchHistory(String keyword2) {
+        if (!this.searchPresenter.keywordsExist(keyword2)) {
+            this.searchPresenter.addKeyWordsTodb(keyword2);
+            initSearchHistory();
+        }
+    }
+
+    private void initSearchHistory() {
+        ArrayList<SearchHistory> searchHistory = this.searchPresenter.getSearchHistory();
+        List<String> historyList = new ArrayList<>();
+        for (SearchHistory history : searchHistory) {
+            historyList.add(history.searchKeyWords);
+        }
+        Collections.reverse(historyList);
+        tv_history.setViews(historyList, new FlowLayout.OnItemClickListener() {
+            public void onItemClick(String content) {
+                search(content);
+                etSearch.setText(content);
+                //etSearch.setSelection(etSearch.getText().length());
+            }
+        });
+    }
 
     private void initViewModel() {
         sourceViewModel = new ViewModelProvider(this).get(SourceViewModel.class);
+        searchPresenter = new SearchPresenter();
     }
 
     /**
@@ -457,8 +544,11 @@ public class SearchActivity extends BaseActivity {
     }
 
     private void initData() {
+        showSuccess();
+        mGridView.setVisibility(View.GONE);
         refreshQRCode();
         initCheckedSourcesForSearch();
+        initSearchHistory();
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("title")) {
             String title = intent.getStringExtra("title");
@@ -530,9 +620,9 @@ public class SearchActivity extends BaseActivity {
         cancel();
         showLoading();
         this.searchTitle = title;
-        mGridView.setVisibility(View.INVISIBLE);
+        mGridView.setVisibility(View.GONE);
         searchAdapter.setNewData(new ArrayList<>());
-
+        refreshSearchHistory(title);
         // 分词
         JiebaSegmenter.getJiebaSegmenterSingleton().getDividedStringAsync(searchTitle, new RequestCallback<ArrayList<String>>() {
             @Override
@@ -595,7 +685,7 @@ public class SearchActivity extends BaseActivity {
         }
         if (siteKey.size() <= 0) {
             Toast.makeText(mContext, "没有指定搜索源", Toast.LENGTH_SHORT).show();
-            showEmpty();
+            //showEmpty();
             return;
         }
 
@@ -610,7 +700,6 @@ public class SearchActivity extends BaseActivity {
     }
 
     private void searchData(AbsXml absXml) {
-
         if (absXml != null && absXml.movie != null && absXml.movie.videoList != null && absXml.movie.videoList.size() > 0) {
             List<Movie.Video> data = new ArrayList<>();
             for (Movie.Video video : absXml.movie.videoList) {
@@ -622,8 +711,10 @@ public class SearchActivity extends BaseActivity {
                 searchAdapter.addData(data);
             } else {
                 showSuccess();
-                mGridView.setVisibility(View.VISIBLE);
                 searchAdapter.setNewData(data);
+                tv_history.setVisibility(View.GONE);
+                searchTips.setVisibility(View.GONE);
+                mGridView.setVisibility(View.VISIBLE);
             }
         }
 

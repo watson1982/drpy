@@ -12,4 +12,4 @@
     android:singleLine="true"
     android:textAlignment="center"
     android:textColor="@color/color_FFFFFF"
-    android:textSize="@dimen/ts_22" />
+    android:textSize="@dimen/ts_20" />
